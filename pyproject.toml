@@ -18,15 +18,17 @@ dependencies = [
   "edsl>=0.1.0",
   "altair>=5.5.0",
   "vl-convert-python>=1.6.0",
+  "matplotlib>=3.9.2",
+  "dspy>=3.0.3",
 ]
 
 [project.urls]
 Homepage = "https://github.com/aridyckovsky/crv_agents"
 
 [project.scripts]
-crv-abm-sim = "crv_abm.sim:main"
-crv-abm-sweep = "crv_abm.sweep:main"
-crv-viz-report = "viz.dashboards:cli_report"
+crv-abm-sim = "crv.world.sim:main"
+crv-abm-sweep = "crv.world.sweep:main"
+crv-viz-report = "crv.viz.dashboards:cli_report"
 
 [tool.uv]
 dev-dependencies = [
