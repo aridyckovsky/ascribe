@@ -1,0 +1,53 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "crv-abm"
+version = "0.1.0"
+description = "Context→Representation→Valuation (CRV) agent-based model using Mesa and Polars"
+authors = [{name = "Ari Dyckovsky", email = "aridyckovsky@gmail.com"}]
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+  "mesa>=3.3.0",
+  "polars>=1.6.0",
+  "numpy>=1.26.0",
+  "typing-extensions>=4.9.0",
+  "edsl>=0.1.0",
+  "altair>=5.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/aridyckovsky/crv_agents"
+
+[project.scripts]
+crv-abm-sim = "crv_abm.sim:main"
+crv-abm-sweep = "crv_abm.sweep:main"
+
+[tool.uv]
+dev-dependencies = [
+  "pytest>=8.0.0",
+  "ruff>=0.5.0",
+  "mypy>=1.10.0",
+  "types-requests",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+lint.select = ["E", "F", "I", "UP"]
+lint.ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_unreachable = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
