@@ -8,15 +8,16 @@ version = "0.1.0"
 description = "Context→Representation→Valuation (CRV) agent-based model using Mesa and Polars"
 authors = [{name = "Ari Dyckovsky", email = "aridyckovsky@gmail.com"}]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = {text = "MIT"}
 dependencies = [
   "mesa>=3.3.0",
-  "polars>=1.6.0",
+  "polars>=1.33",
   "numpy>=1.26.0",
   "typing-extensions>=4.9.0",
   "edsl>=0.1.0",
   "altair>=5.5.0",
+  "vl-convert-python>=1.6.0",
 ]
 
 [project.urls]
@@ -25,6 +26,7 @@ Homepage = "https://github.com/aridyckovsky/crv_agents"
 [project.scripts]
 crv-abm-sim = "crv_abm.sim:main"
 crv-abm-sweep = "crv_abm.sweep:main"
+crv-viz-report = "viz.dashboards:cli_report"
 
 [tool.uv]
 dev-dependencies = [
