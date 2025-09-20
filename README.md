@@ -93,8 +93,9 @@ uv run crv-abm-sweep \
 Offline policy → sim (deterministic mock; no API keys)
 
 ```bash
-uv run crv-lab build-policy --mock --persona persona_baseline --model gpt-4o --out-dir out/policy_demo
-uv run crv-abm-sim --policy out/policy_demo/policy_crv_one_agent_valuation_v0.1.0.parquet --steps 10 --out out/policy_sim
+uv run crv-lab build-policy --runs-root runs/policy_demo --mode mock --persona persona_baseline --model gpt-4o
+RUN_DIR=$(ls -dt runs/policy_demo/* | head -1)
+uv run crv-abm-sim --policy "$RUN_DIR/policies/policy_crv_one_agent_valuation_v0.1.0.parquet" --steps 10 --out out/policy_sim
 ```
 
 Visualization
@@ -165,6 +166,27 @@ uv run crv-viz-report --run out/demo --out out/report.html --theme crv_light [--
 - Inputs: agents_tokens.parquet (required), optional cee.parquet
 - PNG export requires vl-convert-python
 
+### Streamlit (default for large data)
+
+- Server-backed interactive app with Polars-first transforms and small Altair payloads.
+- Rendering uses Streamlit’s Altair API with our theme:
+  - st.altair_chart(chart, theme=None, use_container_width=True)
+- Optional accelerator: if VegaFusion is installed, the app attempts to enable it via:
+  - import altair as alt; alt.data_transformers.enable("vegafusion")
+
+Usage:
+
+```bash
+# Optional accelerator
+uv add vegafusion
+
+# Launch the Streamlit app
+uv run crv-viz-app --run out/demo_run
+
+# Or direct Streamlit invocation
+uv run streamlit run src/crv/viz/app/app.py -- --run out/demo_run
+```
+
 ---
 
 ## Architecture
@@ -175,6 +197,7 @@ src/crv/
   lab/     # EDSL orchestration → policy.parquet + manifest.json
   mind/    # Oracle/compilation scaffolding (optional)
   viz/     # Altair charts and dashboards; HTML/PNG export
+  core/    # zero‑IO contracts: grammar, schemas, tables, ids/typing, hashing/serde, versioning, errors
 
 scripts/   # Reproducible demos (sim, policy+sim, sweeps, viz)
 tests/     # CLI tests, step/determinism checks, viz spec tests
@@ -194,6 +217,7 @@ Boundary rules
 - Fixed seeds and explicit config hashing; barrier semantics (valuations at t apply at t+1).
 - Stable Polars schemas; artifacts include metadata.json.
 - Tests cover CLI, step logic, and viz specifications.
+- Core contracts validated under tests/core (naming invariants, identity edge combination rules, table descriptor contracts, versioning helpers).
 
 Coding standards
 
@@ -229,6 +253,7 @@ uv run pytest -q
 
 - Concept spec: CONCEPT.md
 - Design and boundaries: src/crv/README.md
+- Core contracts: src/crv/core/README.md
 - Demo workflows: scripts/README.md
 
 ---
