@@ -1,6 +1,6 @@
-from src.crv.core.grammar import TableName, is_lower_snake
-from src.crv.core.tables import get_table, list_tables
-from src.crv.core.versioning import SCHEMA_V
+from crv.core.grammar import TableName, is_lower_snake
+from crv.core.tables import get_table, list_tables
+from crv.core.versioning import SCHEMA_V
 
 
 def test_descriptors_contract() -> None:

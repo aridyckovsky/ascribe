@@ -1,6 +1,6 @@
-from src.crv.core.hashing import hash_row, json_dumps_canonical
-from src.crv.core.serde import json_dumps_canonical as serde_dumps
-from src.crv.core.serde import json_loads
+from crv.core.hashing import hash_row, json_dumps_canonical
+from crv.core.serde import json_dumps_canonical as serde_dumps
+from crv.core.serde import json_loads
 
 
 def test_json_dumps_canonical_sorted_and_ascii_policy() -> None:

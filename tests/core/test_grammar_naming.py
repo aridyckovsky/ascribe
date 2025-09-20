@@ -1,4 +1,4 @@
-from src.crv.core.grammar import (
+from crv.core.grammar import (
     ActionKind,
     ChannelType,
     ExchangeKind,

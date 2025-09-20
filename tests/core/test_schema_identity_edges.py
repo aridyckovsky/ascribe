@@ -3,8 +3,8 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
-from src.crv.core.errors import SchemaError
-from src.crv.core.schema import IdentityEdgeRow
+from crv.core.errors import SchemaError
+from crv.core.schema import IdentityEdgeRow
 
 # Matrix of required field combos per edge_kind
 REQUIRED_BY_KIND: dict[str, set[str]] = {

@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.crv.core.schema import ActionCandidate, DecisionHead
+from crv.core.schema import ActionCandidate, DecisionHead
 
 
 def test_action_candidate_normalizes_action_type() -> None:

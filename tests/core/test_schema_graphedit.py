@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.crv.core.schema import GraphEdit
+from crv.core.schema import GraphEdit
 
 
 def test_graphedit_accepts_canonical_ops_token_token() -> None:

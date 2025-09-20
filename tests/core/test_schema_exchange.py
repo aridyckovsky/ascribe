@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.crv.core.schema import ExchangeRow
+from crv.core.schema import ExchangeRow
 
 
 def test_exchange_kind_accepts_lower_snake() -> None:

@@ -2,7 +2,7 @@
 
 import pytest
 
-from src.crv.core.versioning import (
+from crv.core.versioning import (
     SCHEMA_COMPAT_MAJOR,
     SCHEMA_COMPAT_MINOR,
     SchemaVersion,

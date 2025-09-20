@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from src.crv.core.schema import MessageRow, ScenarioRow
+from crv.core.schema import MessageRow, ScenarioRow
 
 
 def test_message_row_visibility_normalization() -> None:
