@@ -26,7 +26,7 @@ if repo_readme.exists():
     readme_text = repo_readme.read_text(encoding="utf-8")
     readme_text = readme_text.replace(
         "## Citation (Future-thinking)",
-        "<a id=\"citation\"></a>\n## Citation (Future-thinking)",
+        '<a id="citation"></a>\n## Citation (Future-thinking)',
     )
     with mkdocs_gen_files.open(index_md, "w") as f:
         f.write(readme_text)

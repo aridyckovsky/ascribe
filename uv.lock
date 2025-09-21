@@ -534,6 +534,9 @@ dev = [
     { name = "ruff" },
     { name = "types-requests" },
 ]
+docs = [
+    { name = "crv-abm", extra = ["docs"] },
+]
 
 [package.metadata]
 requires-dist = [
@@ -568,6 +571,7 @@ dev = [
     { name = "ruff", specifier = ">=0.5.0" },
     { name = "types-requests" },
 ]
+docs = [{ name = "crv-abm", extras = ["docs"] }]
 
 [[package]]
 name = "cycler"

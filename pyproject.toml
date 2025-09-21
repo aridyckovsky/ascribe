@@ -47,13 +47,16 @@ docs = [
   "mkdocs-literate-nav>=0.6"
 ]
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pytest>=8.0.0",
   "ruff>=0.5.0",
   "mypy>=1.10.0",
   "types-requests",
   "requests-mock>=1.12.1",
+]
+docs = [
+  "crv-abm[docs]",
 ]
 
 [tool.ruff]
