@@ -1,0 +1,44 @@
+name: Docs
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version-file: "pyproject.toml"
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: tools/ebnf/package-lock.json
+
+      - name: Sync Python dependencies
+        run: uv sync --frozen --all-extras --dev
+
+      - name: Install Node dependencies
+        run: npm --prefix tools/ebnf ci
+
+      - name: Build documentation
+        run: sh tools/generate_docs.sh
+
+      - name: Upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mkdocs-site
+          path: site
+          if-no-files-found: error
