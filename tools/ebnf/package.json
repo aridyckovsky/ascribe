@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "devDependencies": {
+    "ebnf2railroad": "^1.14.0"
+  },
+  "scripts": {
+    "diagrams": "ebnf2railroad -t \"CRV Core Grammar Diagrams\" ../../src/crv/core/core.ebnf -o ../../docs/grammar/diagrams.html"
+  }
+}
