@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Context→Representation→Valuation (CRV) agent-based model using Mesa and Polars"
 authors = [{name = "Ari Dyckovsky", email = "aridyckovsky@gmail.com"}]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<3.14"
 license = {text = "MIT"}
 dependencies = [
   "mesa>=3.3.0",
@@ -22,6 +22,10 @@ dependencies = [
   "dspy>=3.0.3",
   "python-dotenv>=1.1.1",
   "networkx>=3.5",
+  "requests>=2.32.3",
+  "vegafusion>=2.0.2",
+  "streamlit>=1.49.1",
+  "pydantic>=2.11.9",
 ]
 
 [project.urls]
@@ -32,13 +36,27 @@ crv-abm-sim = "crv.world.sim:main"
 crv-abm-sweep = "crv.world.sweep:main"
 crv-viz-report = "crv.viz.dashboards:cli_report"
 crv-lab = "crv.lab.cli:main"
+crv-viz-app = "crv.viz.app.app:main"
 
-[tool.uv]
-dev-dependencies = [
+[project.optional-dependencies]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5,<10",
+  "mkdocstrings[python]>=0.25,<0.31",
+  "mkdocs-gen-files>=0.5",
+  "mkdocs-literate-nav>=0.6"
+]
+
+[dependency-groups]
+dev = [
   "pytest>=8.0.0",
   "ruff>=0.5.0",
   "mypy>=1.10.0",
   "types-requests",
+  "requests-mock>=1.12.1",
+]
+docs = [
+  "crv-abm[docs]",
 ]
 
 [tool.ruff]
@@ -59,8 +77,11 @@ disallow_incomplete_defs = true
 check_untyped_defs = true
 no_implicit_optional = true
 
-# Configure Hatch build to include our src packages
+# Configure Hatch build to include our src packages and grammar
 [tool.hatch.build.targets.wheel]
 packages = [
   "src/crv",
+]
+include = [
+  "src/crv/core/core.ebnf",
 ]
