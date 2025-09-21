@@ -20,6 +20,16 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Cache uv and venv
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('uv.lock') }}-py3.13
+          restore-keys: |
+            ${{ runner.os }}-uv-
+
       - name: Sync dependencies
         run: uv sync --frozen --group dev
 
