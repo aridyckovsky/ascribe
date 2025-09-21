@@ -1,0 +1,439 @@
+(* ======================================================================= *)
+(* CRV Core Grammar — ISO/IEC 14977 compliant                              *)
+(* ======================================================================= *)
+
+(* ---------- Action selector ---------- *)
+
+action_request =
+    "acquire_token"
+  | "relinquish_token"
+  | "relate_agent"
+  | "relate_other_agents"
+  | "endorse_token"
+  | "coendorse_token_with_agents"
+  | "expose_signal_about_token"
+  | "declare_cooccurrence_between_tokens"
+  | "propose_peer_exchange"
+  | "accept_peer_exchange"
+  | "reject_peer_exchange"
+  | "settle_peer_exchange"
+  | "post_order_to_venue"
+  | "cancel_order_at_venue"
+  | "settle_trade_from_venue"
+  | "swap_at_venue"
+  | "cast_vote_at_venue"
+  | "publish_vote_outcome_from_venue"
+  | "gift_token"
+  | "send_chat_message"
+  | "publish_announcement" ;
+
+(* ---------- Action invocations ---------- *)
+
+acquire_token =
+    "acquire_token"
+  , "("
+  , agent_id
+  , ","
+  , token_id
+  , [ "," , quantity ]
+  , [ "," , mode ]
+  , ")" ;
+
+relinquish_token =
+    "relinquish_token"
+  , "("
+  , agent_id
+  , ","
+  , token_id
+  , [ "," , quantity ]
+  , ")" ;
+
+relate_agent =
+    "relate_agent"
+  , "("
+  , source_agent_id
+  , ","
+  , target_agent_id
+  , ","
+  , relation_polarity
+  , ")" ;
+
+relate_other_agents =
+    "relate_other_agents"
+  , "("
+  , speaker_agent_id
+  , ","
+  , subject_agent_id
+  , ","
+  , object_agent_id
+  , ","
+  , relation_polarity
+  , ")" ;
+
+endorse_token =
+    "endorse_token"
+  , "("
+  , speaker_agent_id
+  , ","
+  , audience
+  , ","
+  , token_id
+  , ","
+  , endorsement_polarity
+  , ")" ;
+
+coendorse_token_with_agents =
+    "coendorse_token_with_agents"
+  , "("
+  , speaker_agent_id
+  , ","
+  , audience
+  , ","
+  , agent_a_id
+  , ","
+  , agent_b_id
+  , ","
+  , token_id
+  , ","
+  , endorsement_polarity
+  , ")" ;
+
+expose_signal_about_token =
+    "expose_signal_about_token"
+  , "("
+  , speaker_agent_id
+  , ","
+  , audience
+  , ","
+  , token_id
+  , ","
+  , signal_polarity
+  , ")" ;
+
+declare_cooccurrence_between_tokens =
+    "declare_cooccurrence_between_tokens"
+  , "("
+  , token_a_id
+  , ","
+  , token_b_id
+  , ")" ;
+
+propose_peer_exchange =
+    "propose_peer_exchange"
+  , "("
+  , proposer_agent_id
+  , ","
+  , counterparty_agent_id
+  , ","
+  , give_map
+  , ","
+  , want_map
+  , [ "," , price ]
+  , [ "," , ttl ]
+  , ")" ;
+
+accept_peer_exchange =
+    "accept_peer_exchange"
+  , "("
+  , counterparty_agent_id
+  , ","
+  , proposal_id
+  , ")" ;
+
+reject_peer_exchange =
+    "reject_peer_exchange"
+  , "("
+  , counterparty_agent_id
+  , ","
+  , proposal_id
+  , ")" ;
+
+settle_peer_exchange =
+    "settle_peer_exchange"
+  , "("
+  , proposal_id
+  , ","
+  , legs
+  , ")" ;
+
+post_order_to_venue =
+    "post_order_to_venue"
+  , "("
+  , agent_id
+  , ","
+  , venue_id
+  , ","
+  , token_id
+  , ","
+  , side
+  , ","
+  , quantity
+  , ","
+  , limit_price
+  , ","
+  , ttl
+  , ")" ;
+
+cancel_order_at_venue =
+    "cancel_order_at_venue"
+  , "("
+  , agent_id
+  , ","
+  , venue_id
+  , ","
+  , order_id
+  , ")" ;
+
+settle_trade_from_venue =
+    "settle_trade_from_venue"
+  , "("
+  , venue_id
+  , ","
+  , token_id
+  , ","
+  , price
+  , ","
+  , quantity
+  , ","
+  , taker_agent_id
+  , ","
+  , maker_agent_id
+  , ","
+  , side
+  , ")" ;
+
+swap_at_venue =
+    "swap_at_venue"
+  , "("
+  , agent_id
+  , ","
+  , venue_id
+  , ","
+  , input_token_id
+  , ","
+  , input_quantity
+  , ","
+  , output_token_id
+  , ","
+  , minimum_output_quantity
+  , ")" ;
+
+cast_vote_at_venue =
+    "cast_vote_at_venue"
+  , "("
+  , agent_id
+  , ","
+  , venue_id
+  , ","
+  , token_id
+  , ","
+  , stance_label
+  , ","
+  , stance_value
+  , ")" ;
+
+publish_vote_outcome_from_venue =
+    "publish_vote_outcome_from_venue"
+  , "("
+  , venue_id
+  , ","
+  , token_id
+  , ","
+  , baseline_value
+  , ")" ;
+
+gift_token =
+    "gift_token"
+  , "("
+  , from_agent_id
+  , ","
+  , to_agent_id
+  , ","
+  , token_id
+  , ","
+  , quantity
+  , ")" ;
+
+send_chat_message =
+    "send_chat_message"
+  , "("
+  , sender_agent_id
+  , ","
+  , channel
+  , ","
+  , visibility
+  , ","
+  , utterance
+  , ")" ;
+
+publish_announcement =
+    "publish_announcement"
+  , "("
+  , sender_agent_id
+  , ","
+  , channel
+  , ","
+  , payload
+  , ")" ;
+
+observation_envelope =
+    "observation_envelope"
+  , "("
+  , actor_agent_id
+  , ","
+  , observer_agent_id
+  , ","
+  , channel
+  , ","
+  , visibility
+  , ","
+  , payload
+  , ","
+  , delivery_delay
+  , ")" ;
+
+representation_patch =
+    "representation_patch"
+  , "["
+  , [ patch_edit , { "," , patch_edit } ]
+  , "]" ;
+
+patch_edit =
+    "set_identity_edge_weight"
+  , "("
+  , edge_kind
+  , ","
+  , subject_id
+  , [ "," , object_id ]
+  , ","
+  , new_weight
+  , ")"
+  | "adjust_identity_edge_weight"
+  , "("
+  , edge_kind
+  , ","
+  , subject_id
+  , [ "," , object_id ]
+  , ","
+  , delta_weight
+  , ")"
+  | "decay_identity_edges"
+  , "("
+  , edge_kind
+  , ","
+  , scope_selector
+  , ","
+  , decay_lambda
+  , ")"
+  | "remove_identity_edge"
+  , "("
+  , edge_kind
+  , ","
+  , subject_id
+  , [ "," , object_id ]
+  , ")" ;
+
+(* ---------- Parameter nonterminals ---------- *)
+
+agent_id = Ident ;
+from_agent_id = Ident ;
+to_agent_id = Ident ;
+source_agent_id = Ident ;
+target_agent_id = Ident ;
+speaker_agent_id = Ident ;
+sender_agent_id = Ident ;
+subject_agent_id = Ident ;
+object_agent_id = Ident ;
+agent_a_id = Ident ;
+agent_b_id = Ident ;
+counterparty_agent_id = Ident ;
+proposer_agent_id = Ident ;
+taker_agent_id = Ident ;
+maker_agent_id = Ident ;
+actor_agent_id = Ident ;
+observer_agent_id = Ident ;
+
+proposal_id = Ident ;
+order_id = Ident ;
+venue_id = Ident ;
+channel = Ident ;
+visibility = Ident ;
+audience = Ident ;
+
+token_id = Ident ;
+token_a_id = Ident ;
+token_b_id = Ident ;
+input_token_id = Ident ;
+output_token_id = Ident ;
+
+relation_polarity = Ident ;
+endorsement_polarity = Ident ;
+signal_polarity = Ident ;
+stance_label = Ident ;
+
+mode = Ident ;
+side = Ident ;
+scope_selector = Ident ;
+legs = Ident ;
+give_map = Ident ;
+want_map = Ident ;
+payload = String | Ident ;
+utterance = String ;
+
+quantity = Number ;
+input_quantity = Number ;
+minimum_output_quantity = Number ;
+price = Number ;
+limit_price = Number ;
+baseline_value = Number ;
+stance_value = Number ;
+new_weight = Number ;
+delta_weight = Number ;
+decay_lambda = Number ;
+delivery_delay = Number ;
+ttl = Number ;
+
+edge_kind = Ident ;
+subject_id = Ident ;
+object_id = Ident ;
+
+(* ---------- Lexical ---------- *)
+
+Ident =
+    letter
+  , { letter | digit | "_" } ;
+
+Number =
+    [ "-" ]
+  , digit
+  , { digit }
+  , [ "." , digit , { digit } ] ;
+
+String =
+    '"'
+  , { string_character }
+  , '"' ;
+
+string_character =
+      string_unescaped
+    | escape_sequence ;
+
+string_unescaped = ? any character except double-quote and backslash ? ;
+
+escape_sequence =
+    '\\'
+  , ( '"'
+    | '\\'
+    | 'n'
+    | 't'
+    ) ;
+
+character = ? any Unicode scalar value ? ;
+
+letter =
+    "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T"
+  | "U" | "V" | "W" | "X" | "Y" | "Z"
+  | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t"
+  | "u" | "v" | "w" | "x" | "y" | "z" | "_" ;
+
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;

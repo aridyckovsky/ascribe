@@ -11,9 +11,9 @@ Foundational, zero-IO core for the CRV stack. This module defines:
 
 Downstream packages (crv.io, crv.world, crv.mind, crv.viz) depend on these contracts.
 
-## Zero-IO, Naming, and Normalization
+## Naming and Normalization
 
-- Zero IO: Core uses only stdlib + pydantic. No file/network IO.
+- Core uses only stdlib + pydantic. No file/network IO except a minimal read of `core.ebnf` grammar into `grammar.py`.
 - Naming policy:
   - Enum classes: PascalCase
   - Enum member names: UPPER_SNAKE (Python)

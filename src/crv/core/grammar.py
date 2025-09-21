@@ -9,9 +9,6 @@ Responsibilities
 - Centralize canonical PatchOp operations (no legacy aliases).
 - Supply developer-facing examples and math mapping tables.
 
-Zero-IO Guarantee
-- This module uses only stdlib and performs no file/network IO.
-
 Design principles
 -----------------
 1) One naming standard:
@@ -91,7 +88,9 @@ from __future__ import annotations
 
 import re
 from collections.abc import Iterable
+from dataclasses import dataclass
 from enum import Enum
+from pathlib import Path
 from typing import Final
 
 __all__ = [
@@ -104,6 +103,9 @@ __all__ = [
     "ExchangeKind",
     "TableName",
     "EBNF_GRAMMAR",
+    "GrammarProduction",
+    "ParsedGrammar",
+    "PARSED_GRAMMAR",
     # helpers/validators
     "is_lower_snake",
     "assert_lower_snake",
@@ -118,6 +120,132 @@ __all__ = [
     "canonical_action_key",
     "ensure_all_enum_values_lower_snake",
 ]
+
+# Canonical grammar file next to this module
+_EBNF_PATH = Path(__file__).with_name("core.ebnf")
+
+
+def _load_ebnf_text() -> str:
+    # Return the canonical EBNF text (no normalization).
+    return _EBNF_PATH.read_text(encoding="utf-8")
+
+
+EBNF_GRAMMAR: Final[str] = _load_ebnf_text()
+
+
+@dataclass(slots=True, frozen=True)
+class GrammarProduction:
+    """Parsed production with convenient accessors."""
+
+    name: str
+    expression: str
+    alternatives: tuple[str, ...]
+    leading_terminals: tuple[str, ...]
+
+    def lower_snake_terminals(self) -> tuple[str, ...]:
+        return tuple(token for token in self.leading_terminals if is_lower_snake(token))
+
+
+@dataclass(slots=True, frozen=True)
+class ParsedGrammar:
+    """Container for parsed grammar productions."""
+
+    productions: dict[str, GrammarProduction]
+
+    def production(self, name: str) -> GrammarProduction:
+        try:
+            return self.productions[name]
+        except KeyError as exc:  # pragma: no cover - defensive
+            raise KeyError(f"Unknown grammar production: {name}") from exc
+
+    def lower_snake_terminals(self, name: str) -> tuple[str, ...]:
+        return self.production(name).lower_snake_terminals()
+
+    @classmethod
+    def from_text(cls, text: str) -> ParsedGrammar:
+        stripped = _strip_ebnf_comments(text)
+        productions: dict[str, GrammarProduction] = {}
+        for match in _RULE_RE.finditer(stripped):
+            rule_name = match.group(1)
+            expression = match.group(2).strip()
+            alternatives = _split_alternatives(expression)
+            leading = tuple(
+                literal
+                for literal in (_first_literal(part) for part in alternatives)
+                if literal is not None
+            )
+            productions[rule_name] = GrammarProduction(
+                name=rule_name,
+                expression=expression,
+                alternatives=alternatives,
+                leading_terminals=_dedupe_preserving_order(leading),
+            )
+        return cls(productions=productions)
+
+
+_COMMENT_RE = re.compile(r"\(\*.*?\*\)", re.DOTALL)
+_RULE_RE = re.compile(r"(?ms)^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*?)\s*;")
+_LITERAL_RE = re.compile(r"[\"']([^\"']+)[\"']")
+
+
+def _strip_ebnf_comments(text: str) -> str:
+    return _COMMENT_RE.sub(" ", text)
+
+
+def _split_alternatives(expression: str) -> tuple[str, ...]:
+    parts: list[str] = []
+    buffer: list[str] = []
+    depth = 0
+    quote: str | None = None
+    i = 0
+    while i < len(expression):
+        ch = expression[i]
+        if quote is not None:
+            buffer.append(ch)
+            if ch == quote:
+                quote = None
+            elif ch == "\\" and i + 1 < len(expression):
+                i += 1
+                buffer.append(expression[i])
+            i += 1
+            continue
+        if ch in ('"', "'"):
+            quote = ch
+            buffer.append(ch)
+        elif ch in "([{":
+            depth += 1
+            buffer.append(ch)
+        elif ch in ")]}":
+            depth = max(0, depth - 1)
+            buffer.append(ch)
+        elif ch == "|" and depth == 0:
+            part = "".join(buffer).strip()
+            if part:
+                parts.append(part)
+            buffer = []
+        else:
+            buffer.append(ch)
+        i += 1
+    tail = "".join(buffer).strip()
+    if tail:
+        parts.append(tail)
+    return tuple(parts)
+
+
+def _first_literal(alt: str) -> str | None:
+    match = _LITERAL_RE.search(alt)
+    return match.group(1) if match else None
+
+
+def _dedupe_preserving_order(items: Iterable[str]) -> tuple[str, ...]:
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for item in items:
+        if item not in seen:
+            seen.add(item)
+            ordered.append(item)
+    return tuple(ordered)
+
 
 # ============================================================================
 # ACTIONS, CHANNELS, VISIBILITY
@@ -347,76 +475,6 @@ class TableName(Enum):
     MESSAGES = "messages"
     DECISIONS = "decisions"
     ORACLE_CALLS = "oracle_calls"
-
-
-# ============================================================================
-# EBNF — authorititative, lower_snake
-# ============================================================================
-
-EBNF_GRAMMAR: Final[str] = r"""
-action_request ::=
-    acquire_token
-  | relinquish_token
-  | relate_agent
-  | relate_other_agents
-  | endorse_token
-  | coendorse_token_with_agents
-  | expose_signal_about_token
-  | declare_cooccurrence_between_tokens
-  | propose_peer_exchange
-  | accept_peer_exchange
-  | reject_peer_exchange
-  | settle_peer_exchange
-  | post_order_to_venue
-  | cancel_order_at_venue
-  | settle_trade_from_venue
-  | swap_at_venue
-  | cast_vote_at_venue
-  | publish_vote_outcome_from_venue
-  | gift_token
-  | send_chat_message
-  | publish_announcement ;
-
-acquire_token(agent_id, token_id, quantity?, mode?)
-relinquish_token(agent_id, token_id, quantity?)
-
-relate_agent(source_agent_id, target_agent_id, relation_polarity)
-relate_other_agents(speaker_agent_id, subject_agent_id, object_agent_id, relation_polarity)
-
-endorse_token(speaker_agent_id, audience, token_id, endorsement_polarity)
-coendorse_token_with_agents(speaker_agent_id, audience, agent_a_id, agent_b_id, token_id, endorsement_polarity)
-
-expose_signal_about_token(speaker_agent_id, audience, token_id, signal_polarity)
-declare_cooccurrence_between_tokens(token_a_id, token_b_id)
-
-propose_peer_exchange(proposer_agent_id, counterparty_agent_id, give_map, want_map, price?, ttl?)
-accept_peer_exchange(counterparty_agent_id, proposal_id)
-reject_peer_exchange(counterparty_agent_id, proposal_id)
-settle_peer_exchange(proposal_id, legs)
-
-post_order_to_venue(agent_id, venue_id, token_id, side, quantity, limit_price, ttl)
-cancel_order_at_venue(agent_id, venue_id, order_id)
-settle_trade_from_venue(venue_id, token_id, price, quantity, taker_agent_id, maker_agent_id, side)
-swap_at_venue(agent_id, venue_id, input_token_id, input_quantity, output_token_id, minimum_output_quantity)
-
-cast_vote_at_venue(agent_id, venue_id, token_id, stance_label, stance_value)
-publish_vote_outcome_from_venue(venue_id, token_id, baseline_value)
-
-gift_token(from_agent_id, to_agent_id, token_id, quantity)
-
-send_chat_message(sender_agent_id, channel, visibility, utterance)
-publish_announcement(sender_agent_id, channel, payload)
-
-observation_envelope(actor_agent_id, observer_agent_id, channel, visibility, payload, delivery_delay)
-
-representation_patch[ { patch_edit } ]
-
-patch_edit ::=
-    set_identity_edge_weight(edge_kind, subject_id, object_id?, new_weight)
-  | adjust_identity_edge_weight(edge_kind, subject_id, object_id?, delta_weight)
-  | decay_identity_edges(edge_kind, scope_selector, decay_lambda)
-  | remove_identity_edge(edge_kind, subject_id, object_id?)
-"""
 
 
 # ============================================================================
@@ -653,3 +711,31 @@ def ensure_all_enum_values_lower_snake(enums: Iterable[type[Enum]]) -> None:
                 raise AssertionError(
                     f"{E.__name__}.{m.name} has non-lower_snake value: {m.value!r}"
                 )
+
+
+def _assert_production_matches_enum(
+    grammar: ParsedGrammar, rule_name: str, enum_cls: type[Enum]
+) -> None:
+    actual = list(grammar.lower_snake_terminals(rule_name))
+    expected = [member.value for member in enum_cls]
+    if actual != expected:
+        actual_set = set(actual)
+        expected_set = set(expected)
+        issues: list[str] = []
+        missing = expected_set - actual_set
+        extra = actual_set - expected_set
+        if missing:
+            issues.append(f"missing {sorted(missing)}")
+        if extra:
+            issues.append(f"unexpected {sorted(extra)}")
+        if not issues:
+            issues.append("ordering differs")
+        raise ValueError(
+            f"Grammar production {rule_name!r} out of sync with {enum_cls.__name__}: "
+            + "; ".join(issues)
+        )
+
+
+PARSED_GRAMMAR: Final[ParsedGrammar] = ParsedGrammar.from_text(EBNF_GRAMMAR)
+_assert_production_matches_enum(PARSED_GRAMMAR, "action_request", ActionKind)
+_assert_production_matches_enum(PARSED_GRAMMAR, "patch_edit", PatchOp)
