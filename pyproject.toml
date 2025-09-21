@@ -36,7 +36,7 @@ crv-abm-sim = "crv.world.sim:main"
 crv-abm-sweep = "crv.world.sweep:main"
 crv-viz-report = "crv.viz.dashboards:cli_report"
 crv-lab = "crv.lab.cli:main"
-crv-viz-app = "crv.viz.app.app:main"
+crv-app = "app.main:main"
 
 [project.optional-dependencies]
 docs = [
@@ -81,6 +81,7 @@ no_implicit_optional = true
 [tool.hatch.build.targets.wheel]
 packages = [
   "src/crv",
+  "src/app",
 ]
 include = [
   "src/crv/core/core.ebnf",
