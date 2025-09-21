@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # TODO: This naming is off, need to consider difference wiht build_docs.py
 set -euo pipefail
 
