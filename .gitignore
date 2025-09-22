@@ -8,6 +8,3 @@ out/
 .edsl_cache
 
 tools/ebnf/node_modules/
-
-docs/grammar/ebnf.md
-docs/grammar/diagrams.html

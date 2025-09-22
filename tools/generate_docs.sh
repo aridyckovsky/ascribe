@@ -5,10 +5,25 @@
 set -euo pipefail
 
 # Ensure Node deps for diagrams CLI (ebnf2railroad) are installed; actual generation happens in mkdocs gen-files
-if [ -d tools/ebnf/node_modules ]; then
+# Prefer deterministic install when a lockfile exists; otherwise fallback to install
+if [ -f tools/ebnf/package-lock.json ]; then
   npm --prefix tools/ebnf ci
 else
-  npm --prefix tools/ebnf ci
+  npm --prefix tools/ebnf install --no-audit --no-fund
+fi
+
+# Sync Python dependencies (docs group includes local 'tools' via uv workspace)
+uv sync --extra docs
+
+# Ensure Python can import the repo-root 'tools' package during mkdocs gen-files
+export PYTHONPATH="${PWD}${PYTHONPATH:+:${PYTHONPATH}}"
+
+# Silence litellm DeprecationWarning about missing event loop during DSPy calls
+export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore:There is no current event loop:DeprecationWarning}"
+
+# Enforce DSPy generation when OpenAI key is present (fail fast if DSPy unavailable)
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  export DOCS_DSPY_REQUIRED="${DOCS_DSPY_REQUIRED:-true}"
 fi
 
 # Strict MkDocs build (gen-files runs tools/build_docs.py during build)
