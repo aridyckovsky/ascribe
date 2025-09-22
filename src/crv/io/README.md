@@ -1,63 +1,91 @@
-# crv.io — Canonical IO layer for CRV datasets
+# CRV IO
 
-Purpose
+Canonical Polars/Arrow‑first IO for CRV datasets. Aligns with `crv.core.tables` and enforces append‑only semantics, atomic renames, per‑table manifests, tick‑bucket partitioning, and schema validation.
 
-- Provide a Polars/Arrow-first IO layer for canonical CRV tables defined in `crv.core.tables`.
-- Guarantees: append-only writes, atomic tmp→ready file renames, per-table manifests, tick-bucket partitioning, and schema validation.
+## At a Glance
 
-Key design constraints
+- Append‑only, atomic writes (`*.tmp` → fsync → atomic rename).
+- Per‑table manifests with bucket/part metadata and tick ranges.
+- Manifest‑guided pruning on reads (by tick range).
+- Validation against core descriptors (strict by default).
+- Import DAG: stdlib, Polars/Arrow, and `crv.core.*` only.
 
-- Import DAG: `crv.io` depends only on stdlib, Polars (and pyarrow under the hood), and `crv.core.*`. It MUST NOT import world, mind, lab, viz, or app.
-- Layout and semantics align with `plans/io/io_module_starter_plan.md`.
+## Scope & Guarantees
 
-Path layout (file protocol baseline)
+- Append‑only writer (single‑writer initial semantics; per‑bucket locks can be added later).
+- Partitioning: `bucket = tick // tick_bucket_size`, directories zero‑padded (e.g., `bucket=000123`).
+- Manifests record per‑part and per‑bucket stats for reader pruning.
+- Strict schema mode:
+  - No columns beyond (required ∪ nullable).
+  - Safe scalar casts to (`i64`, `f64`, `str`).
+  - `Struct` / `List[Struct]` accepted (Phase 1: shallow checks).
 
-- Root is configurable (default: `out`), under which runs are stored:
-  - `<root>/runs/<run_id>/tables/<table_name>/bucket=000123/part-<UUID>.parquet`
-  - `<root>/runs/<run_id>/tables/<table_name>/manifest.json`
-- Partitioning: tick-bucket partitioning with `bucket = tick // tick_bucket_size`.
-- `bucket=...` directories zero-padded to 6 digits.
+## Path Layout
 
-Atomic append semantics
+```
+<root>/runs/<run_id>/tables/<table_name>/
+  bucket=000123/part-<UUID>.parquet
+  manifest.json
+```
 
-- Writes go to `*.parquet.tmp` first, fsync, then `os.replace(tmp, final)` for atomicity.
-- Single-writer initial semantics (no inter-process locks). Per-bucket locking can be added later if needed.
+`root_dir` is configurable via `IoSettings` (default: `out`).
 
-Manifests
+## Append Semantics
 
-- A per-table `manifest.json` tracks partitions (buckets) and parts with:
-  - per-part rows, bytes, tick_min, tick_max, and created_at.
-  - per-bucket totals: row_count, byte_size, and tick range.
-- Readers prune files using manifest tick ranges when a `where` filter is provided.
-- If a manifest is missing, readers fall back to an FS walk.
-- A `rebuild_manifest_from_fs` utility re-derives manifest data by scanning parquet files (best-effort).
+- Write to `*.parquet.tmp`, fsync file & directory, then `os.replace(tmp → final)` atomically.
 
-Validation against core descriptors
+## Manifests
 
-- Uses `crv.core.tables` as source of truth: required/nullable columns and dtypes.
-- Strict mode (default) enforces no extra columns beyond (required ∪ nullable).
-- Scalar columns (`i64`, `f64`, `str`) are safely casted when possible.
-- `struct` and `list[struct]` accepted as Polars `Struct`/`Object` and `List` respectively (no deep validation in Phase 1).
+Each table’s `manifest.json` includes:
 
-APIs
+- Per‑part: `rows`, `bytes`, `tick_min`, `tick_max`, `created_at`.
+- Per‑bucket: `row_count`, `byte_size`, tick range.
 
-- `IoSettings`: configuration (root_dir, tick_bucket_size, row_group_size, compression, strict_schema, etc.)
-- `Dataset(settings, run_id)`: facade for a specific run with:
-  - `append(table, df, *, validate_schema=True, validate_rows=False) -> dict`
-  - `scan(table, where: dict | None = None) -> pl.LazyFrame`
-  - `read(table, where: dict | None = None, limit: int | None = None) -> pl.DataFrame`
-  - `manifest(table) -> TableManifest | None`
-  - `rebuild_manifest(table) -> TableManifest`
-- Lower-level helpers in `crv.io.write`, `crv.io.read`, `crv.io.manifest`, `crv.io.paths`, `crv.io.fs`, `crv.io.validate`.
+Readers use manifest ranges to prune scans when `where` is provided. A rebuild path rescans Parquet files if a manifest is missing.
 
-Quickstart
+## Validation Against Core
+
+- Source of truth: `crv.core.tables`.
+- Enforced in strict mode:
+  - Required/nullable sets and dtypes.
+  - Safe scalar casts (`i64`, `f64`, `str`).
+  - Shallow acceptance of `Struct` and `List[Struct]`.
+
+## Public API
 
 ```python
 import polars as pl
 from crv.io import IoSettings, Dataset
 from crv.core.grammar import TableName
 
-# Configure where to write (default: out)
+# Configure the IO layer
+settings = IoSettings(root_dir="out", tick_bucket_size=100)
+
+# Bind to a specific run
+ds = Dataset(settings, run_id="20250101-000000")
+
+# Append a DataFrame
+summary = ds.append(TableName.IDENTITY_EDGES, pl.DataFrame({...}))
+
+# Lazy scan with pruning by tick range
+lf = ds.scan(TableName.IDENTITY_EDGES, where={"tick_min": 0, "tick_max": 120})
+
+# Eager read (optional limit)
+df = ds.read(TableName.IDENTITY_EDGES, where={"tick_min": 0, "tick_max": 120}, limit=None)
+
+# Inspect or rebuild a manifest
+m = ds.manifest(TableName.IDENTITY_EDGES)
+m2 = ds.rebuild_manifest(TableName.IDENTITY_EDGES)
+```
+
+## Quickstart
+
+```python
+import polars as pl
+from crv.io import IoSettings, Dataset
+from crv.core.grammar import TableName
+
+# Configure where to write (default: "out")
 settings = IoSettings(root_dir="out", tick_bucket_size=100)
 
 # Bind to a run
@@ -84,7 +112,7 @@ m = ds.manifest(TableName.IDENTITY_EDGES)
 print(m)
 ```
 
-Configuration (IoSettings)
+## Configuration (IoSettings)
 
 - `root_dir: str = "out"`
 - `partitioning: Literal["tick_buckets"] = "tick_buckets"`
@@ -92,14 +120,10 @@ Configuration (IoSettings)
 - `row_group_size: int = 128 * 1024`
 - `compression: Literal["zstd","lz4","snappy"] = "zstd"`
 - `strict_schema: bool = True`
-- `write_manifest_every_n: int = 1` (reserved for future batching)
-- `fs_protocol: str = "file"`, `fs_options: dict = {}` (future fsspec integration)
+- `write_manifest_every_n: int = 1` (reserved for batching)
+- `fs_protocol: str = "file"`, `fs_options: dict = {}` (future fsspec)
 
-Config loading (env > TOML > defaults)
-
-IoSettings.load() reads a TOML file (./crv.toml or pyproject.toml under [tool.crv.io]) and then overlays with environment variables. Precedence: environment > TOML > built-in defaults.
-
-TOML examples:
+Config loading (env > TOML > defaults):
 
 ```toml
 # crv.toml
@@ -120,9 +144,8 @@ compression = "zstd"
 strict_schema = true
 ```
 
-Environment variables (prefix CRV*IO*):
-
 ```bash
+# Environment variables
 export CRV_IO_ROOT_DIR="out"
 export CRV_IO_TICK_BUCKET_SIZE="100"
 export CRV_IO_ROW_GROUP_SIZE="131072"
@@ -132,7 +155,7 @@ export CRV_IO_STRICT_SCHEMA="1"           # 1/0/true/false/yes/no/on/off
 export CRV_IO_WRITE_MANIFEST_EVERY_N="1"
 ```
 
-Run Bundle quickstart
+## Run Bundle
 
 ```python
 from crv.io.config import IoSettings
@@ -148,23 +171,29 @@ payload = write_run_bundle_manifest(settings, run_id, meta={"note": "demo"})
 print(payload["io"], payload["tables"].keys())
 ```
 
-Testing
+## Testing
 
-- Unit tests cover:
-  - path/bucket math
-  - append atomicity and manifest updates
-  - scan pruning via manifest ranges
-  - manifest rebuild from FS walk
-  - strict schema validation
-  - import DAG isolation (no side imports of world/mind/lab/viz/app)
+- Path/bucket math.
+- Append atomicity & manifest updates.
+- Scan pruning via manifest ranges.
+- Manifest rebuild from FS.
+- Strict schema enforcement.
+- Import DAG isolation (no world/mind/lab/viz/app imports).
 
-Future work
+```bash
+uv run ruff check .
+uv run mypy --strict
+uv run pytest -q
+```
 
-- Optional per-bucket write locks for multi-writer scenarios.
-- fsspec-backed remote storage (s3fs/gcsfs).
-- Row-level validation and richer struct-type validation.
-- Streaming APIs (tail manifest).
+## Future Work
 
-Notes
+- Per‑bucket write locks for multi‑writer scenarios.
+- fsspec remote storage (s3fs/gcsfs).
+- Row‑level validation and deep struct validation.
+- Streaming APIs (tail manifests).
 
-- `crv.io` is designed to be adopted incrementally. Legacy flat outputs remain intact during migration.
+## Contributing
+
+- Align with `plans/io/io_module_starter_plan.md` and `plans/io/run_bundle_and_lab_integration_plan.md`.
+- Respect the import DAG (no downstream imports).

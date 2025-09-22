@@ -18,6 +18,12 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      DOCS_USE_DSPY: "true"
+      DOCS_DSPY_PROVIDER: "openai"
+      DOCS_DSPY_MODEL: "gpt-4o-mini"
+      DOCS_BASE_URL: "https://docs.ascribe.live"
+      DOCS_DSPY_SEED: "123"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -49,13 +55,28 @@ jobs:
             ${{ runner.os }}-docs-
 
       - name: Sync Python dependencies
-        run: uv sync --frozen --group docs
+        run: uv sync --frozen --extra docs
 
       - name: Install Node dependencies
         run: npm --prefix tools/ebnf ci
 
-      - name: Build documentation
+      - name: Build documentation (DSPy-enabled)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: bash tools/generate_docs.sh
+
+      - name: Assert llms.txt authored by DSPy
+        run: |
+          if [ -n "${{ secrets.OPENAI_API_KEY }}" ]; then
+            if grep -q '^# llms.txt (fallback)' site/llms.txt; then
+              echo "Expected DSPy-authored llms.txt but fallback was emitted."
+              exit 1
+            else
+              echo "DSPy-authored llms.txt verified."
+            fi
+          else
+            echo "No OPENAI_API_KEY secret; skipping DSPy assertion (forks/PRs)."
+          fi
 
       - name: Configure Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

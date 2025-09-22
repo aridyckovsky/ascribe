@@ -1,4 +1,4 @@
-site_name: CRV Agents — Core
+site_name: CRV Agents
 repo_url: https://github.com/aridyckovsky/crv_agents
 theme:
   name: material
@@ -14,23 +14,26 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
+          paths: [src]
           options:
             docstring_style: google
             show_source: true
             show_root_heading: true
             separate_signature: true
-            preload_modules: [crv.core]
+            inherited_members: true
+            filters: ["!^_"]
+            show_if_no_docstring: true
+            members_order: source
+            group_by_category: true
+            show_signature: true
+            show_signature_annotations: true
+            annotations_path: full
+            show_submodules: false
+            show_object_full_path: false
+            show_root_full_path: false
+            line_length: 88
   - gen-files:
       scripts:
         - tools/build_docs.py
   - literate-nav:
       nav_file: SUMMARY.md
-
-nav:
-  - Overview: index.md
-  - Core:
-      - Contracts (README): src/crv/core/README.md
-      - Grammar (EBNF): grammar/ebnf.md
-      - Grammar diagrams (HTML): grammar/diagrams.html
-  - API:
-      - crv.core: api/crv_core.md

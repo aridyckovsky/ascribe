@@ -1,13 +1,30 @@
 #!/usr/bin/env bash
-# TODO: This naming is off, need to consider difference wiht build_docs.py
+# Canonical docs build entrypoint for dev and CI.
+# - Grammar EBNF markdown is generated via tools/build_docs.py (mkdocs gen-files) at build time.
+# - Ensures Node deps are available; diagrams are generated during mkdocs gen-files. Runs strict mkdocs build.
 set -euo pipefail
 
-uv run python tools/generate_ebnf_md.py
-if [ -d tools/ebnf/node_modules ]; then
-  npm --prefix tools/ebnf run diagrams
-else
+# Ensure Node deps for diagrams CLI (ebnf2railroad) are installed; actual generation happens in mkdocs gen-files
+# Prefer deterministic install when a lockfile exists; otherwise fallback to install
+if [ -f tools/ebnf/package-lock.json ]; then
   npm --prefix tools/ebnf ci
-  npm --prefix tools/ebnf run diagrams
+else
+  npm --prefix tools/ebnf install --no-audit --no-fund
 fi
 
+# Sync Python dependencies (docs group includes local 'tools' via uv workspace)
+uv sync --extra docs
+
+# Ensure Python can import the repo-root 'tools' package during mkdocs gen-files
+export PYTHONPATH="${PWD}${PYTHONPATH:+:${PYTHONPATH}}"
+
+# Silence litellm DeprecationWarning about missing event loop during DSPy calls
+export PYTHONWARNINGS="${PYTHONWARNINGS:-ignore:There is no current event loop:DeprecationWarning}"
+
+# Enforce DSPy generation when OpenAI key is present (fail fast if DSPy unavailable)
+if [ -n "${OPENAI_API_KEY:-}" ]; then
+  export DOCS_DSPY_REQUIRED="${DOCS_DSPY_REQUIRED:-true}"
+fi
+
+# Strict MkDocs build (gen-files runs tools/build_docs.py during build)
 uv run mkdocs build --strict
