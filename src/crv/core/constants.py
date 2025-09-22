@@ -16,6 +16,11 @@ References:
 
 from __future__ import annotations
 
+from typing import Literal
+
+# TODO: Once config.py types are moved here, uncomment the import below.
+# from crv.core.typing import Compression
+
 __all__ = [
     "TICK_BUCKET_SIZE",
     "ROW_GROUP_SIZE",
@@ -29,4 +34,4 @@ TICK_BUCKET_SIZE: int = 100
 ROW_GROUP_SIZE: int = 128 * 1024
 
 # Default compression codec for persisted artifacts in IO layers that honor this contract.
-COMPRESSION: str = "zstd"
+COMPRESSION: Literal["zstd", "lz4", "snappy"] = "zstd"

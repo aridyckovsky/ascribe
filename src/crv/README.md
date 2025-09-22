@@ -8,6 +8,7 @@ The `crv` package is a **vendor‑neutral**, cohesive namespace for the project�
 - `crv.lab` — empirical elicitation & policy building (EDSL)
 - `crv.mind` — cognitive micro‑functions & oracle (DSPy)
 - `crv.viz` — visualization (Altair)
+- `crv.io` — canonical IO layer (Polars/Arrow-first, append‑only, per‑table manifests)
 
 This structure improves readability, testing, and long‑term maintainability while staying faithful to the CRV model (Context → Representation → Valuation).
 
@@ -52,6 +53,12 @@ crv/
     dashboards.py        # composed multi‑view dashboards
     themes.py            # styles and shared encodings
 ```
+
+## IO layer (crv.io)
+
+- Canonical, append‑only IO with tick‑bucket partitioning and per‑table manifests.
+- Polars/Arrow‑first; atomic tmp→ready renames; strict validation vs `crv.core.tables`.
+- See `src/crv/io/README.md` for usage and API (`IoSettings`, `Dataset`).
 
 ---
 
@@ -207,5 +214,64 @@ Test files by role: `tests/test_world_*.py`, `tests/test_lab_*.py`, `tests/test_
 5. Begin audits and evaluation harness.
 
 ---
+
+## Run Bundle quickstart (world.sim)
+
+By default, world.sim saves outputs under out/runs/<run_id> (or a project-wide root configured via IoSettings). The run-bundle manifest is always written to bundle.manifest.json.
+
+Examples:
+
+- python -m crv.world.sim --steps 1 --run-id demo
+- python -m crv.world.sim --steps 1 --run-id demo --root-dir /tmp/crv_out
+
+Outputs (baseline):
+
+- <root>/runs/<run_id>/agents_tokens.parquet
+- <root>/runs/<run_id>/model.parquet
+- <root>/runs/<run_id>/metadata.json
+- <root>/runs/<run_id>/bundle.manifest.json
+
+Notes:
+
+- When --out is omitted, world.sim defaults to out_dir = <root_dir>/runs/<run_id>.
+- --root-dir overrides repository defaults from TOML/env.
+
+## IO configuration (project-wide)
+
+IoSettings.load() resolves config with precedence:
+
+- Environment variables (prefix CRV*IO*)
+- TOML (./crv.toml or pyproject.toml [tool.crv.io])
+- Built-in defaults
+
+TOML (crv.toml):
+[io]
+root_dir = "out"
+tick_bucket_size = 100
+compression = "zstd"
+strict_schema = true
+
+Environment:
+export CRV_IO_ROOT_DIR="out"
+export CRV_IO_TICK_BUCKET_SIZE="100"
+export CRV_IO_COMPRESSION="zstd"
+export CRV_IO_STRICT_SCHEMA="1"
+
+Details and full examples live in src/crv/io/README.md.
+
+## Orchestration: lab → audit → bundle
+
+A convenience script generates lab artifacts and an audit summary into the Run Bundle, then refreshes bundle.manifest.json:
+
+- python scripts/lab_probe_and_audit.py --run-id lab_demo
+- python scripts/lab_probe_and_audit.py --run-id lab_demo --root-dir /tmp/crv_out --rows 8
+
+Writes under <root>/runs/<run_id>/artifacts/lab/:
+
+- tidy/tidy.parquet (or tidy\_{survey_id}.parquet)
+- audit/audit_summary.parquet
+- audit/audit_summary.json
+
+Then updates bundle.manifest.json so downstream tools can discover tables and artifacts without scanning Parquet.
 
 _This README is the source of truth for the `crv/` package layout and contracts until code lands. Keep it updated as interfaces stabilize._
