@@ -1,30 +1,38 @@
-# Ascribe: Meaning to value to behavior with reproducible CIRVA models
+# Ascribe: Meaning to Value to Behavior with reproducible CIRVA models
 
 [![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB)](pyproject.toml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
 
-CRV‑ABM is a typed, reproducible agent‑based modeling stack for value formation. It models how context updates an agent’s internal representation (self, others, objects, valence) and reads out valuation as a bounded function of that representation.
+Ascribe is a scalable social cognition framework for studying how context shapes internal representations and drives valuation and behavior. It provides typed contracts, deterministic simulation, and reproducible lab artifacts. This repository includes:
 
-- world — Mesa v3 simulation with deterministic artifacts
-- lab — EDSL‑based elicitation to build offline valuation policies
-- viz — Altair charts and dashboards
-- mind — pluggable oracle/compilation hooks (optional but recommended)
+- CRV/CIRVA reference model under src/crv
+  - core — grammar, schemas, table descriptors, hashing/serde, versioning, errors
+  - io — canonical IO (append‑only, manifest‑tracked, Polars/Arrow‑first)
+  - lab — EDSL‑based elicitation to build offline valuation policies
+  - mind — pluggable oracle/compilation hooks (optional but recommended)
+  - world — Mesa v3 simulation with deterministic artifacts
+  - viz — Altair charts and dashboards (HTML/PNG export; used interactively in app)
+- Streamlit application for exploring runs under src/app
+
+_Transition note_: The distribution and repository are named ascribe. Python modules currently live under `crv.*` and the CLIs under `crv-*`. These remain supported for compatibility.
+
+[Docs](https://docs.ascribe.live) · [Issues](https://github.com/aridyckovsky/ascribe/issues)
 
 ---
 
 ## Contents
 
 - [Overview](#overview)
-- [Getting started](#getting-started)
-- [Usage (CLI)](#usage-cli)
+- [Installation](#installation)
+- [Quick start (CLI)](#quick-start-cli)
 - [Python API](#python-api)
-- [Artifacts and contracts](#artifacts-and-contracts)
+- [Project layout](#project-layout)
+- [Artifacts and data contracts](#artifacts-and-data-contracts)
 - [Visualization](#visualization)
-- [Architecture](#architecture)
 - [Determinism and testing](#determinism-and-testing)
 - [Development](#development)
-- [Roadmap](#roadmap)
 - [Documentation](#documentation)
+- [Roadmap](#roadmap)
 - [Citation](#citation)
 - [License](#license)
 
@@ -32,19 +40,19 @@ CRV‑ABM is a typed, reproducible agent‑based modeling stack for value format
 
 ## Overview
 
-CRV is psychology‑first:
+CRV/CIRVA is psychology‑first:
 
-- Endowment lives inside the representation (the self→object link).
-- Valuation is a bounded readout from identity‑mediated triads (not an add‑on premium).
-- Decisions compare bounded value vs cost with optional friction.
+- Endowment lives inside the representation (self→object link).
+- Valuation is a bounded readout from identity‑mediated triads.
+- Decisions compare bounded value vs cost, with optional friction.
 
-For the mathematical specification and empirical signatures, see CONCEPT.md and working manuscript.
+For mathematical specification and empirical signatures, see CONCEPT.md and the working manuscript.
 
 ---
 
-## Getting started
+## Installation
 
-Option A — uv (recommended)
+uv (recommended and supported)
 
 ```bash
 uv venv
@@ -52,24 +60,15 @@ source .venv/bin/activate    # Windows: .venv\Scripts\activate
 uv sync
 ```
 
-Option B — pip (editable install)
-
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -U pip
-pip install -e .
-```
-
 Requirements
 
 - Python 3.13+
-- Optional (lab local runs): OPENAI_API_KEY and other provider keys in .env (auto‑loaded by python‑dotenv)
+- Optional (lab local runs): provider keys in .env (auto‑loaded by python‑dotenv)
 - Optional (PNG export): vl-convert-python
 
 ---
 
-## Usage (CLI)
+## Quick start (CLI)
 
 Simulation
 
@@ -78,9 +77,6 @@ uv run crv-abm-sim \
   --n 30 --k 1 --steps 100 --seed 123 --out out/run \
   [--policy path/to/policy.parquet] [--demo]
 ```
-
-- Policy parquet columns: ctx_token_kind, ctx_owner_status, ctx_peer_alignment, persona, model, value_mean
-- Determinism: valuations computed at t apply at t+1 (barrier semantics)
 
 Parameter sweep
 
@@ -96,12 +92,6 @@ Offline policy → sim (deterministic mock; no API keys)
 uv run crv-lab build-policy --runs-root runs/policy_demo --mode mock --persona persona_baseline --model gpt-4o
 RUN_DIR=$(ls -dt runs/policy_demo/* | head -1)
 uv run crv-abm-sim --policy "$RUN_DIR/policies/policy_crv_one_agent_valuation_v0.1.0.parquet" --steps 10 --out out/policy_sim
-```
-
-Visualization
-
-```bash
-uv run crv-viz-report --run out/run --out report.html --theme crv_light [--png report.png] [--cost 0.5]
 ```
 
 ---
@@ -138,7 +128,33 @@ model.policy_default = data.POLICY_DEFAULT
 
 ---
 
-## Artifacts and contracts
+## Project layout
+
+```
+src/crv/
+  world/   # Mesa model, schedule, config, events, data export (Polars)
+  lab/     # EDSL orchestration → policy.parquet + manifest.json
+  mind/    # Oracle/compilation scaffolding (optional)
+  viz/     # Altair charts and dashboards; HTML/PNG export
+  io/      # canonical IO (append-only, manifests, zstd partitions)
+  core/    # zero‑IO contracts: grammar, schemas, tables, ids/typing, hashing/serde, versioning, errors
+
+src/app/   # Streamlit UI shell and app-specific helpers
+
+scripts/   # Reproducible demos (sim, policy+sim, sweeps, viz)
+tests/     # CLI tests, step/determinism checks, viz spec tests
+```
+
+Boundary rules
+
+- world does not import lab or mind; communicates via files or injected interfaces.
+- lab has no runtime dependency on world/mind; produces tidy tables + policies.
+- mind exposes engine‑agnostic oracles/compiled modules (optional).
+- viz reads artifacts only; does not mutate core state.
+
+---
+
+## Artifacts and data contracts
 
 Simulation outputs (under out/your_run/)
 
@@ -155,17 +171,13 @@ Time column
 
 - Visualization groups by t; some summaries refer to step. If your agents_tokens lacks t, filter by step or adjust writer. Target is harmonized t.
 
----
+Canonical IO (crv.io)
 
-## Canonical IO (crv.io)
-
-The repository provides a canonical, append-only IO layer for CRV datasets under src/crv/io:
-
-- Polars/Arrow-first writes with atomic tmp→ready renames
-- Per-table manifest.json with bucket/tick stats for pruning and recovery
-- Tick-bucket partitioning (default 100) with zstd compression and 128k row groups
-- Strict schema validation against crv.core.tables descriptors
-- Simple facade: from crv.io import IoSettings, Dataset
+- Append‑only writes with atomic tmp→ready renames
+- Per‑table manifest.json with bucket/tick stats for pruning and recovery
+- Tick‑bucket partitioning (default 100) with zstd compression and ~128k row groups
+- Strict schema validation against crv.core.tables
+- Facade: from crv.io import IoSettings, Dataset
 
 Quickstart
 
@@ -174,7 +186,7 @@ import polars as pl
 from crv.io import IoSettings, Dataset
 from crv.core.grammar import TableName
 
-settings = IoSettings(root_dir="out")  # defaults aligned to crv.core.constants
+settings = IoSettings(root_dir="out")
 ds = Dataset(settings, run_id="20250101-000000")
 
 df = pl.DataFrame({
@@ -189,26 +201,17 @@ lf = ds.scan(TableName.IDENTITY_EDGES, where={"tick_min": 0, "tick_max": 120})
 print(lf.collect())
 ```
 
-See: src/crv/io/README.md for details.
+---
 
 ## Visualization
+
+Report export (HTML/PNG)
 
 ```bash
 uv run crv-viz-report --run out/demo --out out/report.html --theme crv_light [--png report.png] [--cost 0.5]
 ```
 
-- Inputs: agents_tokens.parquet (required), optional cee.parquet
-- PNG export requires vl-convert-python
-
-### Streamlit (default for large data)
-
-- Server-backed interactive app with Polars-first transforms and small Altair payloads.
-- Rendering uses Streamlit’s Altair API with our theme:
-  - st.altair_chart(chart, theme=None, use_container_width=True)
-- Optional accelerator: if VegaFusion is installed, the app attempts to enable it via:
-  - import altair as alt; alt.data_transformers.enable("vegafusion")
-
-Usage:
+Streamlit app
 
 ```bash
 # Optional accelerator
@@ -217,32 +220,9 @@ uv add vegafusion
 # Launch the Streamlit app
 uv run crv-app --run out/demo_run
 
-# Or direct Streamlit invocation
+# Or direct Streamlit invocation with uv
 uv run streamlit run src/app/ui.py -- --run out/demo_run
 ```
-
----
-
-## Architecture
-
-```
-src/crv/
-  world/   # Mesa model, schedule, config, events, data export (Polars)
-  lab/     # EDSL orchestration → policy.parquet + manifest.json
-  mind/    # Oracle/compilation scaffolding (optional)
-  viz/     # Altair charts and dashboards; HTML/PNG export
-  core/    # zero‑IO contracts: grammar, schemas, tables, ids/typing, hashing/serde, versioning, errors
-
-scripts/   # Reproducible demos (sim, policy+sim, sweeps, viz)
-tests/     # CLI tests, step/determinism checks, viz spec tests
-```
-
-Boundary rules
-
-- world does not import lab or mind; communicates via files or injected interfaces.
-- lab has no runtime dependency on world/mind; produces tidy tables + policies.
-- mind exposes engine‑agnostic oracles/compiled modules (optional).
-- viz reads artifacts only; does not mutate core state.
 
 ---
 
@@ -251,13 +231,13 @@ Boundary rules
 - Fixed seeds and explicit config hashing; barrier semantics (valuations at t apply at t+1).
 - Stable Polars schemas; artifacts include metadata.json.
 - Tests cover CLI, step logic, and viz specifications.
-- Core contracts validated under tests/core (naming invariants, identity edge combination rules, table descriptor contracts, versioning helpers).
+- Core contracts validated under tests/core.
 
 Coding standards
 
-- Fully typed; `from __future__ import annotations`.
-- Google‑style docstrings (Args/Returns/Raises) with brief examples.
-- Role‑specific modules; avoid catch‑all “utils” or "lib".
+- Fully typed; `from __future__ import annotations`
+- Google‑style docstrings (Args/Returns/Raises)
+- Role‑specific modules; avoid catch‑all “utils” or “lib”
 
 ---
 
@@ -273,6 +253,21 @@ uv run pytest -q
 
 ---
 
+## Documentation
+
+- Build (strict): bash tools/generate_docs.sh
+- Preview: uv run mkdocs serve
+
+Sources and references
+
+- Concept spec: CONCEPT.md
+- Design and boundaries: src/crv/README.md
+- Core contracts: src/crv/core/README.md
+- IO/Lab/Viz READMEs are surfaced into the doc site via tools/build_docs.py
+- Demo workflows: scripts/README.md
+
+---
+
 ## Roadmap
 
 - Harmonize time column naming (t vs step) across writers and viz
@@ -283,41 +278,23 @@ uv run pytest -q
 
 ---
 
-## Documentation
+## Citation
 
-Build (canonical entrypoint for dev and CI)
+If you use Ascribe or the CRV/CIRVA model in academic work, please cite:
 
-```bash
-# Builds grammar diagrams (Node) and the static site under site/ with strict checks
-bash tools/generate_docs.sh
-```
+```bib
+@misc{ascribe_framework,
+  title        = {Ascribe: Framework for Context→Representation→Valuation Models},
+  author       = {Dyckovsky, Ari M.},
+  year         = {2025},
+  howpublished = {\url{https://github.com/aridyckovsky/ascribe}}
+}
 
-Preview locally (no diagram step)
-
-```bash
-uv run mkdocs serve
-```
-
-Sources and references
-
-- Concept spec: CONCEPT.md
-- Design and boundaries: src/crv/README.md
-- Core contracts: src/crv/core/README.md
-- IO/Lab/Viz READMEs are surfaced into the doc site via tools/build_docs.py (mkdocs gen-files)
-- Demo workflows: scripts/README.md
-
----
-
-## Citation (Future-thinking)
-
-If you use CRV‑ABM in academic work, please cite:
-
-```
 @misc{crv_abm,
   title        = {CRV-ABM: Context→Representation→Valuation Agent-Based Model},
   author       = {Dyckovsky, Ari M.},
   year         = {2025},
-  howpublished = {\url{https://github.com/aridyckovsky/crv_agents}}
+  howpublished = {\url{https://github.com/aridyckovsky/ascribe}}
 }
 ```
 
