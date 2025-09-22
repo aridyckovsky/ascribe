@@ -4,7 +4,7 @@ Ascribe is a way to make psychological assumptions about value explicit inside A
 
 Ascribe names this modeling loop CRV/CIRVA: Context → (Interpret) → Representation → Valuation → (Action).
 
-\*Note: This is an in-progress, every early stage documentation site. All guidance and API are **unstable**.
+\*Note: This is an in-progress, very early-stage documentation site. All guidance and API are **unstable**.
 
 ## Contents
 
