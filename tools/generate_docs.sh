@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# TODO: This naming is off, need to consider difference wiht build_docs.py
+# Canonical docs build entrypoint for dev and CI.
+# - Grammar EBNF markdown is generated via tools/build_docs.py (mkdocs gen-files) at build time.
+# - This script handles Node-based diagram generation and runs the strict mkdocs build.
 set -euo pipefail
 
-uv run python tools/generate_ebnf_md.py
+# Build EBNF diagrams (Node step)
 if [ -d tools/ebnf/node_modules ]; then
   npm --prefix tools/ebnf run diagrams
 else
@@ -10,4 +12,5 @@ else
   npm --prefix tools/ebnf run diagrams
 fi
 
+# Strict MkDocs build (gen-files runs tools/build_docs.py during build)
 uv run mkdocs build --strict
