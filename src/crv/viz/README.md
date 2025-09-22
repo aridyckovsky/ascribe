@@ -10,6 +10,7 @@ Key features
 - Accessible defaults: theme with tableau10, readable axes/legends, sensible sizes
 - Interactivity: examples with interval brush (selection param) and linked filtering
 - Saving: HTML always; PNG/SVG/PDF via vl-convert-python
+- Streamlit app: server-backed, Polars-first slicing, small inline payloads; optional VegaFusion
 
 Install and entrypoint
 
@@ -17,8 +18,33 @@ Install and entrypoint
   - altair>=5.5.0
   - polars>=1.33
   - vl-convert-python>=1.6.0 (for PNG/SVG/PDF)
+  - streamlit>=1.49.1
+  - vegafusion>=2.0.2 (optional accelerator)
 - CLI:
   - crv-viz-report = crv.viz.dashboards:cli_report
+  - crv-app = app.ui:main
+
+Streamlit (default for large data)
+
+- The Streamlit app is the default UX for large/interactive runs. It performs Polars-first transforms on the server and only sends the small slice needed to Altair.
+- Rendering uses st.altair_chart(chart, theme=None, use_container_width=True) so our Altair theme applies (per Streamlit docs).
+- Optional VegaFusion is attempted at startup; if installed, we enable it via alt.data_transformers.enable("vegafusion"). The app still runs without it.
+
+Usage:
+
+```bash
+# Optional accelerator
+uv add vegafusion
+
+# Generate a run from the example simulation config (writes to out/example_run)
+uv run --package crv-abm -- python -m crv.world.sim --config src/crv/world/example_simulation.yaml
+
+# Launch the app (recommended)
+uv run crv-app --run out/demo_run
+
+# Or run Streamlit directly
+uv run streamlit run src/app/ui.py -- --run out/demo_run
+```
 
 Quick start (Python)
 
@@ -124,6 +150,15 @@ Data contracts (schemas)
   - o: int | str
   - group: str
   - cee: float
+- events.parquet (optional but recommended)
+  - t: int (derived from step)
+  - type: str (Acquire, Relinquish, PeerExchange, CentralExchange, Chat, ...)
+  - i/j/o/op/p: ints where applicable (agent, peer, object ids)
+  - val: int (±1 stance) when applicable
+  - mode: str acquisition mode (choice | assigned)
+  - delivered/received: JSON strings encoding central venue token flows
+  - recipients: JSON string of chat recipients (empty list for broadcasts)
+  - content: chat transcript payload (UTF-8)
 - networks (precomputed layout; no layout here)
   - nodes: i:int, x:float, y:float, group:(str|int), value:float?
   - edges: src:int, dst:int, x1:float, y1:float, x2:float, y2:float, weight:float?
