@@ -1,4 +1,4 @@
-# CRV Agents
+# Ascribe: CRV Models
 
 CRV (Context → Representation → Valuation) is a deterministic, auditable platform for studying social construction of value with agent‑based simulations, typed cognition, and reproducible lab artifacts. This site documents the modules, APIs, and guides for working with the CRV stack.
 

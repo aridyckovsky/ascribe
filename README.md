@@ -1,4 +1,4 @@
-# CRV‑ABM · Context → Representation → Valuation
+# Ascribe: Meaning to value to behavior with reproducible CIRVA models
 
 [![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB)](pyproject.toml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
@@ -157,6 +157,40 @@ Time column
 
 ---
 
+## Canonical IO (crv.io)
+
+The repository provides a canonical, append-only IO layer for CRV datasets under src/crv/io:
+
+- Polars/Arrow-first writes with atomic tmp→ready renames
+- Per-table manifest.json with bucket/tick stats for pruning and recovery
+- Tick-bucket partitioning (default 100) with zstd compression and 128k row groups
+- Strict schema validation against crv.core.tables descriptors
+- Simple facade: from crv.io import IoSettings, Dataset
+
+Quickstart
+
+```python
+import polars as pl
+from crv.io import IoSettings, Dataset
+from crv.core.grammar import TableName
+
+settings = IoSettings(root_dir="out")  # defaults aligned to crv.core.constants
+ds = Dataset(settings, run_id="20250101-000000")
+
+df = pl.DataFrame({
+    "tick": [0, 1, 2, 101],
+    "observer_agent_id": ["A0", "A1", "A2", "A0"],
+    "edge_kind": ["self_to_object"] * 4,
+    "edge_weight": [0.0, 0.1, 0.2, 0.3],
+})
+
+summary = ds.append(TableName.IDENTITY_EDGES, df)
+lf = ds.scan(TableName.IDENTITY_EDGES, where={"tick_min": 0, "tick_max": 120})
+print(lf.collect())
+```
+
+See: src/crv/io/README.md for details.
+
 ## Visualization
 
 ```bash
@@ -181,10 +215,10 @@ Usage:
 uv add vegafusion
 
 # Launch the Streamlit app
-uv run crv-viz-app --run out/demo_run
+uv run crv-app --run out/demo_run
 
 # Or direct Streamlit invocation
-uv run streamlit run src/crv/viz/app/app.py -- --run out/demo_run
+uv run streamlit run src/app/ui.py -- --run out/demo_run
 ```
 
 ---
@@ -251,9 +285,25 @@ uv run pytest -q
 
 ## Documentation
 
+Build (canonical entrypoint for dev and CI)
+
+```bash
+# Builds grammar diagrams (Node) and the static site under site/ with strict checks
+bash tools/generate_docs.sh
+```
+
+Preview locally (no diagram step)
+
+```bash
+uv run mkdocs serve
+```
+
+Sources and references
+
 - Concept spec: CONCEPT.md
 - Design and boundaries: src/crv/README.md
 - Core contracts: src/crv/core/README.md
+- IO/Lab/Viz READMEs are surfaced into the doc site via tools/build_docs.py (mkdocs gen-files)
 - Demo workflows: scripts/README.md
 
 ---

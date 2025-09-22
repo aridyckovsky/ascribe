@@ -182,6 +182,6 @@ with mkdocs_gen_files.open("SUMMARY.md", "w") as f:
 
 # 3) llms.txt via DSPy helper (fallback handled within build_llms_txt)
 # Allow override of base URL via env (default: DOCS_BASE_URL=https://docs.ascribe.live)
-txt = build_llms_txt(site_name="CRV Agents", base_url=os.getenv("DOCS_BASE_URL"))
+txt = build_llms_txt(site_name="Ascribe Documentation", base_url=os.getenv("DOCS_BASE_URL"))
 with mkdocs_gen_files.open("llms.txt", "w") as f:
     f.write(txt)

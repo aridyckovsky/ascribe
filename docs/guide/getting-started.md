@@ -1,6 +1,6 @@
 # Getting Started
 
-Follow these steps to set up CRV Agents locally and run a minimal example.
+Follow these steps to set up Ascribe with CIRVA models locally and run a minimal example.
 
 ## Prerequisites
 
@@ -22,8 +22,8 @@ pipx install uv
 ## Clone and install
 
 ```bash
-git clone https://github.com/aridyckovsky/crv_agents.git
-cd crv_agents
+git clone https://github.com/aridyckovsky/ascribe.git
+cd ascribe
 uv sync
 ```
 

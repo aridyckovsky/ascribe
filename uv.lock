@@ -204,6 +204,88 @@ wheels = [
 ]
 
 [[package]]
+name = "ascribe"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "altair" },
+    { name = "dspy" },
+    { name = "edsl" },
+    { name = "fsspec" },
+    { name = "matplotlib" },
+    { name = "mesa" },
+    { name = "networkx" },
+    { name = "numpy" },
+    { name = "polars" },
+    { name = "pyarrow" },
+    { name = "pydantic" },
+    { name = "python-dotenv" },
+    { name = "requests" },
+    { name = "streamlit" },
+    { name = "typing-extensions" },
+    { name = "vegafusion" },
+    { name = "vl-convert-python" },
+]
+
+[package.optional-dependencies]
+docs = [
+    { name = "mkdocs" },
+    { name = "mkdocs-gen-files" },
+    { name = "mkdocs-literate-nav" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "mypy" },
+    { name = "pytest" },
+    { name = "requests-mock" },
+    { name = "ruff" },
+    { name = "types-requests" },
+]
+docs = [
+    { name = "ascribe", extra = ["docs"] },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "altair", specifier = ">=5.5.0" },
+    { name = "dspy", specifier = ">=3.0.3" },
+    { name = "edsl", specifier = ">=0.1.0" },
+    { name = "fsspec", specifier = ">=2025.9.0" },
+    { name = "matplotlib", specifier = ">=3.9.2" },
+    { name = "mesa", specifier = ">=3.3.0" },
+    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6" },
+    { name = "mkdocs-gen-files", marker = "extra == 'docs'", specifier = ">=0.5" },
+    { name = "mkdocs-literate-nav", marker = "extra == 'docs'", specifier = ">=0.6" },
+    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5,<10" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25,<0.31" },
+    { name = "networkx", specifier = ">=3.5" },
+    { name = "numpy", specifier = ">=1.26.0" },
+    { name = "polars", specifier = ">=1.33" },
+    { name = "pyarrow", specifier = ">=21" },
+    { name = "pydantic", specifier = ">=2.11.9" },
+    { name = "python-dotenv", specifier = ">=1.1.1" },
+    { name = "requests", specifier = ">=2.32.3" },
+    { name = "streamlit", specifier = ">=1.49.1" },
+    { name = "typing-extensions", specifier = ">=4.9.0" },
+    { name = "vegafusion", specifier = ">=2.0.2" },
+    { name = "vl-convert-python", specifier = ">=1.6.0" },
+]
+provides-extras = ["docs"]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "mypy", specifier = ">=1.10.0" },
+    { name = "pytest", specifier = ">=8.0.0" },
+    { name = "requests-mock", specifier = ">=1.12.1" },
+    { name = "ruff", specifier = ">=0.5.0" },
+    { name = "types-requests" },
+]
+docs = [{ name = "ascribe", extras = ["docs"] }]
+
+[[package]]
 name = "asttokens"
 version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
@@ -494,88 +576,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/b2/dd/880f890a6663b84d9e34a6f88cded89d78f0091e0045a284427cb6b18521/contourpy-1.3.3-cp313-cp313t-win_amd64.whl", hash = "sha256:87acf5963fc2b34825e5b6b048f40e3635dd547f590b04d2ab317c2619ef7ae8", size = 240570, upload-time = "2025-07-26T12:02:12.754Z" },
     { url = "https://files.pythonhosted.org/packages/80/99/2adc7d8ffead633234817ef8e9a87115c8a11927a94478f6bb3d3f4d4f7d/contourpy-1.3.3-cp313-cp313t-win_arm64.whl", hash = "sha256:3c30273eb2a55024ff31ba7d052dde990d7d8e5450f4bbb6e913558b3d6c2301", size = 199713, upload-time = "2025-07-26T12:02:14.4Z" },
 ]
-
-[[package]]
-name = "crv-abm"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "altair" },
-    { name = "dspy" },
-    { name = "edsl" },
-    { name = "fsspec" },
-    { name = "matplotlib" },
-    { name = "mesa" },
-    { name = "networkx" },
-    { name = "numpy" },
-    { name = "polars" },
-    { name = "pyarrow" },
-    { name = "pydantic" },
-    { name = "python-dotenv" },
-    { name = "requests" },
-    { name = "streamlit" },
-    { name = "typing-extensions" },
-    { name = "vegafusion" },
-    { name = "vl-convert-python" },
-]
-
-[package.optional-dependencies]
-docs = [
-    { name = "mkdocs" },
-    { name = "mkdocs-gen-files" },
-    { name = "mkdocs-literate-nav" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "mypy" },
-    { name = "pytest" },
-    { name = "requests-mock" },
-    { name = "ruff" },
-    { name = "types-requests" },
-]
-docs = [
-    { name = "crv-abm", extra = ["docs"] },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "altair", specifier = ">=5.5.0" },
-    { name = "dspy", specifier = ">=3.0.3" },
-    { name = "edsl", specifier = ">=0.1.0" },
-    { name = "fsspec", specifier = ">=2025.9.0" },
-    { name = "matplotlib", specifier = ">=3.9.2" },
-    { name = "mesa", specifier = ">=3.3.0" },
-    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6" },
-    { name = "mkdocs-gen-files", marker = "extra == 'docs'", specifier = ">=0.5" },
-    { name = "mkdocs-literate-nav", marker = "extra == 'docs'", specifier = ">=0.6" },
-    { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5,<10" },
-    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.25,<0.31" },
-    { name = "networkx", specifier = ">=3.5" },
-    { name = "numpy", specifier = ">=1.26.0" },
-    { name = "polars", specifier = ">=1.33" },
-    { name = "pyarrow", specifier = ">=21" },
-    { name = "pydantic", specifier = ">=2.11.9" },
-    { name = "python-dotenv", specifier = ">=1.1.1" },
-    { name = "requests", specifier = ">=2.32.3" },
-    { name = "streamlit", specifier = ">=1.49.1" },
-    { name = "typing-extensions", specifier = ">=4.9.0" },
-    { name = "vegafusion", specifier = ">=2.0.2" },
-    { name = "vl-convert-python", specifier = ">=1.6.0" },
-]
-provides-extras = ["docs"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.10.0" },
-    { name = "pytest", specifier = ">=8.0.0" },
-    { name = "requests-mock", specifier = ">=1.12.1" },
-    { name = "ruff", specifier = ">=0.5.0" },
-    { name = "types-requests" },
-]
-docs = [{ name = "crv-abm", extras = ["docs"] }]
 
 [[package]]
 name = "cycler"
