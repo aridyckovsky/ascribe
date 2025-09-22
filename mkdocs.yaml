@@ -1,5 +1,8 @@
-site_name: CRV Agents
-repo_url: https://github.com/aridyckovsky/crv_agents
+site_name: Ascribe Documentation
+site_description: Meaning to value to behavior with reproducible CIRVA models
+site_author: Ari Dyckovsky
+site_url: https://docs.ascribe.live
+repo_url: https://github.com/aridyckovsky/ascribe
 theme:
   name: material
   features:

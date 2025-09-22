@@ -1,4 +1,4 @@
-# Contributing to crv_agents
+# Contributing to `ascribe`
 
 Thanks for contributing! This document defines our contribution standards, with an emphasis on:
 
