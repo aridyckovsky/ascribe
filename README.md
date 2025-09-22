@@ -1,7 +1,8 @@
-# Ascribe · Meaning → Value → Behavior with reproducible CIRVA models
+# Ascribe: Meaning to Value to Behavior with reproducible CIRVA models
 
 [![Python](https://img.shields.io/badge/Python-3.13%2B-3776AB)](pyproject.toml)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/license/mit)
+
 Ascribe is a scalable social cognition framework for studying how context shapes internal representations and drives valuation and behavior. It provides typed contracts, deterministic simulation, and reproducible lab artifacts. This repository includes:
 
 - CRV/CIRVA reference model under src/crv
