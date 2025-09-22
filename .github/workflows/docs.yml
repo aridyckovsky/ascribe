@@ -55,13 +55,10 @@ jobs:
             ${{ runner.os }}-docs-
 
       - name: Sync Python dependencies
-        run: uv sync --frozen --group docs
+        run: uv sync --frozen --extra docs
 
       - name: Install Node dependencies
         run: npm --prefix tools/ebnf ci
-
-      - name: Install repo-only tools package
-        run: uv pip install -e ./tools
 
       - name: Build documentation (DSPy-enabled)
         env:
