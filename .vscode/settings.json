@@ -10,5 +10,9 @@
   "[markdown]": {
     "editor.formatOnSave": true,
     "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "ruff.enable": true,
+  "[markdownlint]": {
+    "editor.formatOnSave": true,
   }
 }
