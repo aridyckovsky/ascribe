@@ -1,160 +1,219 @@
-# crv.lab — EDSL policy building for CRV
+# CRV Lab
 
-Purpose
+Experimental layer for CRV providing personas, scenarios, typed EDSL tasks, offline per‑persona policies, and probes/audits integrated with the Run Bundle. Lab artifacts are reproducible (Parquet + JSON manifests) and align with the Lab Restructure plan and CRV concept docs.
 
-- crv.lab encapsulates Expected Parrot EDSL usage to elicit structured judgments and aggregate them into a policy table consumed by the CRV simulator.
-- Outputs include a tidy policy Parquet and a manifest with provenance for replayability and audits.
+## At a Glance
 
-Module layout
+- Personas: structured traits and loaders; easy AgentList construction.
+- Scenarios: encoder with canonical ctx\_\* fields (file or synthetic).
+- Typed tasks (EDSL): valuation baseline and scaffolds for other signatures.
+- Offline policy: aggregate per‑persona policy.parquet from tidy results.
+- Probes & audits: schedule tasks, compare against mind/oracle, write Run Bundle artifacts.
 
-- cli.py — command-line entry points (build-policy, show-policy)
-- policy_builder.py — run orchestration, normalization, aggregation, and stamped artifact writing
-- survey.py — EDSL survey pieces (question, scenarios, agents, models)
-- AGENTS.md — detailed standards and practices for EDSL in this repo
+## Module Layout
 
-Requirements
+- cli.py — thin CLI for building policies, showing heads, and pulling remote results
+- policy_builder.py — end‑to‑end orchestration (mock/local/remote), manifests
+- surveys.py — valuation question + Survey builder (EDSL); SURVEY_ID anchor
+- scenarios.py — ScenarioSchema, loader (Parquet or synthetic), ScenarioList
+- personas.py — Persona definitions, loaders, AgentList adapter
+- modelspec.py — model registry, JSON loader, ModelList adapter
+- policy.py — tidy normalization and per‑persona aggregation
+- tasks.py — scaffolds for typed EDSL tasks (interpret/update/appraise/value_policy/produce_utterance)
+- probes.py — schedule/run probes; tidy outputs to Run Bundle
+- audit.py — compare mind/oracle outputs vs EDSL answers; audit artifacts
+- io_helpers.py — writers for Run Bundle artifacts via crv.io
 
-- Python 3.13 (project-level setting)
-- uv (>= 0.8) for environment and scripts
-- OPENAI_API_KEY in .env for local runs (Remote Inference is optional)
-- python-dotenv is used to load .env automatically by default
+## Capabilities
 
-Quick start (mock or local runs)
+- Build a valuation policy (mock/local/remote).
+- Normalize EDSL results to a stable tidy schema.
+- Aggregate tidy → policy with statistics (mean/sd/n).
+- Emit manifests with seeds, versions, and paths.
+- Schedule probes and write audits into a Run Bundle.
 
-1. Install and sync:
-   - uv venv
-   - source .venv/bin/activate # Windows: .venv\Scripts\activate
-   - uv sync
-2. (Optional) Configure keys in `.env`:
-   - OPENAI_API_KEY=sk-... # required for `--mode local`
-   - EXPECTED_PARROT_API_KEY=ep-... # required for `--mode remote`
-3. Build a mock policy run (no API keys needed):
-   - uv run crv-lab build-policy --runs-root runs/demo --mode mock --persona persona_baseline --model gpt-4o
-   - Artifacts land under `runs/demo/<STAMP>/` with `raw/`, `tidy/`, `policies/`, and `manifest_*`.
-4. Inspect outputs:
-   - ls runs/demo/<STAMP>/policies/
-   - uv run crv-lab show-policy --policy runs/demo/<STAMP>/policies/policy_crv_one_agent_valuation_v0.1.0.parquet
+## Quickstart
 
-Remote inference
+1. Environment
 
-- Requires an Expected Parrot Coop account and credits.
-- Ensure `EXPECTED_PARROT_API_KEY` is present in `.env` and run:
-  - uv run crv-lab build-policy --runs-root runs/remote --mode remote --persona persona_baseline --model gpt-4o
-- The CLI submits a remote job and records its UUID in the manifest. No policy parquet is written until the job completes; track status in Coop or poll the API before re-running aggregation. Once the job reports `completed` (and the remote cache contains answers), either re-run `crv-lab build-policy --mode local --await-remote ...` to wait for completion inline or call `uv run crv-lab pull-remote --runs-root RUNS_ROOT --stamp STAMP` to download results and materialize the policy in-place.
-- If submission fails (validation error, auth, etc.), the CLI exits non-zero and still writes a manifest capturing the error message for audit. Coop response details (for example, validation fields) are stored under `meta.remote_job` when available.
-- The CLI aborts on validation errors; check the Coop jobs dashboard for details if the run fails.
+- Python 3.13+
+- Install uv:
+  - macOS/Linux: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+  - Or `pipx install uv`
+- Optional keys:
+  - Local EDSL: set `OPENAI_API_KEY` in `.env`
+  - Remote EDSL: set `EXPECTED_PARROT_API_KEY` in `.env`
 
-CLI reference
+2. Install
 
-- Build a policy run:
-  ```
-  uv run crv-lab build-policy --runs-root RUNS_ROOT --mode {mock|local|remote} [--persona P] [--personas-file FILE] [--model M] [--models-file FILE] [--scenarios PATH] [--seed N] [--iterations N] [--stamp STAMP] [--await-remote] [--poll-interval SEC] [--timeout SEC] [--no-env]
-  ```
-- Show a policy:
-  ```
-  uv run crv-lab show-policy --policy path/to/policy.parquet [--n ROWS]
-  ```
-- Pull remote results:
-  ```
-  uv run crv-lab pull-remote --runs-root RUNS_ROOT --stamp STAMP [--job UUID] [--poll-interval SEC] [--timeout SEC]
-  ```
-- Key flags:
-  - `--runs-root`: root directory for stamped runs (default `runs`).
-  - `--mode`: `mock` (deterministic hash answers), `local` (Expected Parrot via local provider SDKs), or `remote` (Expected Parrot Coop jobs).
-  - `--scenarios`: Parquet with required `ctx_*` columns; omit to use the synthetic demo grid.
-  - `--seed`: controls mock hash determinism and manifest provenance.
-  - `--personas-file`: JSON file describing persona traits (used unless overridden by `--persona`).
-  - `--models-file`: JSON file defining model specs (slug, coop slug, provider, notes).
-  - `--iterations`: number of iterations for Coop remote jobs (default `1`).
-  - `--await-remote`: block until the Coop job completes and pull results immediately.
-  - `--poll-interval` / `--timeout`: polling cadence and timeout when awaiting completion.
-  - `--no-env`: skip loading `.env` before resolving credentials.
-  - `--print-manifest`: echo the manifest path on completion.
-  - Remote mode writes only a submission manifest until results are downloaded. Use `--await-remote` or `crv-lab pull-remote` to materialize tidy/policy files once the job finishes.
+```bash
+uv sync
+```
 
-Survey components
+3. Mock policy (no keys)
 
-- Question (`surveys.py`): Linear 1–7 Likert with ctx variables (`ctx_token_kind`, `ctx_owner_status`, `ctx_peer_alignment`, plus social/affect cues).
-- Scenarios (`scenarios.py`): ScenarioList built from Polars frames with extended context columns (`ctx_*`). Optional JSON overrides can enrich defaults.
-- Personas (`personas.py`): Structured persona definitions with traits/notes, serialized into manifests.
-- Models (`modelspec.py`): Coop-compatible model slug mapping, provider metadata, and notes.
+```bash
+uv run crv-lab build-policy --runs-root runs/demo --mode mock --persona persona_baseline --model gpt-4o
+# Inspect outputs
+ls runs/demo/<STAMP>/
+uv run crv-lab show-policy --policy runs/demo/<STAMP>/policies/policy_crv_one_agent_valuation_v0.1.1.parquet
+```
 
-Outputs and data contracts
+4. Local EDSL (requires OPENAI_API_KEY)
 
-- Run directory layout: `RUNS_ROOT/<STAMP>/`
-  - `raw/raw_<survey_id>.parquet`
-  - `tidy/tidy_<survey_id>.parquet`
-  - `policies/policy_<survey_id>.parquet`
-  - `manifest_<survey_id>.json`
-- Tidy table schema extends the AGENTS contract with `prompt_hash` and additional context fields (`ctx_salient_other_alignment`, `ctx_recent_affect`, `ctx_group_label`).
-- Policy schema:
-  - ctx_token_kind, ctx_owner_status, ctx_peer_alignment, ctx_salient_other_alignment, ctx_recent_affect, ctx_group_label, persona, model, value_mean, value_sd, n
-- Manifest JSON captures:
-  - `timestamp`, `survey_id`, `run_stamp`, `runs_root`, git commit, edsl version
-  - Execution metadata (`mode`, seeds, persona/model lists, persona trait summaries, model metadata, iterations, scenario source, prompt hash count, key presence, raw/tidy/policy paths, optional EDSL job ids)
-  - Remote submissions additionally record the remote job payload and UUID; tidy/policy paths are omitted until aggregation is rerun.
+```bash
+uv run crv-lab build-policy --runs-root runs/local --mode local --persona persona_baseline --model gpt-4o
+```
 
-Troubleshooting
+5. Remote submission (Coop; EXPECTED_PARROT_API_KEY)
 
-- “QuestionScenarioRenderError: variables still present”:
-  - Ensure the question template uses ctx.\* variables (e.g., ctx.ctx_token_kind).
-  - Ensure scenarios are constructed with ScenarioList.from_list("ctx", ...).
-- “EDSL results missing ctx columns”:
-  - The build now tries to extract ctx\__ from typical shapes (scenario._, scenario.ctx.\*, top-level ctx struct).
-  - If ctx\_\* columns still don’t appear but row count matches the expected grid, positional alignment is applied to produce a valid tidy table.
-- “Validation Error” on remote runs:
-  - This often indicates a routing/registry issue or a provider-side constraint; check the Coop Jobs page for the full validator error.
-  - For development, prefer `--mode local` with `OPENAI_API_KEY` set in `.env`.
-- No keys found:
-  - The CLI auto-loads `.env`; pass `--no-env` to disable. Ensure `.env` contains `OPENAI_API_KEY` for local runs and `EXPECTED_PARROT_API_KEY` for remote runs.
+```bash
+# Submit
+uv run crv-lab build-policy --runs-root runs/remote --mode remote --persona persona_baseline --model gpt-4o
+# Await completion inline
+uv run crv-lab build-policy --runs-root runs/remote --mode remote --persona persona_baseline --model gpt-4o --await-remote
+# Or pull later
+uv run crv-lab pull-remote --runs-root runs/remote --stamp <STAMP>
+```
 
-Contributing
+## CLI Reference
 
-- Keep survey.py conservative and readable:
-  - Canonical variable names and ctx namespace.
-  - Avoid provider-specific switches and keep model slugs simple.
-- Bump SURVEY_ID if changing question wording or scenario schema.
-- Add/extend tests in tests/ to cover normalization, schema, and determinism.
-- Run the standard checks before pushing:
-  - uv run ruff
-  - uv run mypy --strict
-  - uv run pytest -q
-- No pandas in library code; use Polars for data frames and Arrow via to_pandas() only at EDSL boundaries.
-- Keep outputs deterministic and reproducible; manifests must include seeds and versions.
+Build a policy run:
 
-Examples
+```bash
+uv run crv-lab build-policy \
+  --runs-root RUNS_ROOT \
+  --mode {mock|local|remote} \
+  [--persona P] [--personas-file FILE] \
+  [--model M] [--models-file FILE] \
+  [--scenarios PATH] [--seed N] [--iterations N] \
+  [--stamp STAMP] [--await-remote] \
+  [--poll-interval SEC] [--timeout SEC] [--no-env] [--print-manifest]
+```
 
-- Deterministic mock run:
-  - uv run crv-lab build-policy --runs-root runs/demo --mode mock --persona persona_baseline --model gpt-4o
-- Local EDSL execution (requires OPENAI_API_KEY):
-  - uv run crv-lab build-policy --runs-root runs/local --mode local --persona persona_baseline --model gpt-4o
-- Remote submission (await completion):
-  - uv run crv-lab build-policy --runs-root runs/remote --mode remote --persona persona_baseline --model gpt-4o --await-remote
-- Remote submission (deferred pull):
-  - uv run crv-lab build-policy --runs-root runs/remote --mode remote --persona persona_baseline --model gpt-4o
-  - uv run crv-lab pull-remote --runs-root runs/remote --stamp <STAMP>
-- Custom scenario grid:
-  - uv run crv-lab build-policy --runs-root runs/scenarios --mode mock --scenarios data/my_scenarios.parquet
-- EDSL docs (Surveys, Scenarios, Agents, Models, Results)
-- Inspect output:
-  - uv run crv-lab show-policy --policy runs/demo/<STAMP>/policies/policy_crv_one_agent_valuation_v0.1.0.parquet
+Show a policy head:
 
-Run Bundle integration and audit
+```bash
+uv run crv-lab show-policy --policy path/to/policy.parquet [--n ROWS]
+```
 
-- Lab helpers write artifacts to <root>/runs/<run_id>/artifacts/lab/{tidy,probes,policy,audit}/
-- Examples:
-  - python scripts/lab_probe_and_audit.py --run-id lab_demo
-  - python scripts/lab_probe_and_audit.py --run-id lab_demo --root-dir /tmp/crv_out --rows 8
-- The script resolves IoSettings.load() precedence (env > TOML > defaults) and refreshes bundle.manifest.json for discoverability.
+Pull remote results (materialize tidy/policy):
 
-References
+```bash
+uv run crv-lab pull-remote --runs-root RUNS_ROOT --stamp STAMP [--job UUID] [--poll-interval SEC] [--timeout SEC] [--no-env] [--print-manifest]
+```
 
-- EDSL docs (Surveys, Scenarios, Agents, Models, Results)
+## Modes & Credentials
 
-- EDSL docs (Surveys, Scenarios, Agents, Models, Results)
-- Expected Parrot Remote Inference docs (setup, jobs, credits)
-- AGENTS.md in this directory for our internal style and contracts
+- `--mode mock`: deterministic seeded answers (no keys).
+- `--mode local`: EDSL execution; requires `OPENAI_API_KEY` for GPT slugs.
+- `--mode remote`: submits to Expected Parrot Coop; requires `EXPECTED_PARROT_API_KEY`.
+  - On submission: writes a manifest with `remote_job`; tidy/policy are created after completion (await inline or `pull-remote` later).
 
-Notes
+## Scenarios (scenarios.py)
 
-- This module intentionally favors a minimal, robust local flow (gpt-4o + OPENAI_API_KEY) and adds only the normalization needed to stabilize outputs across EDSL versions and backends. Remote inference is optional and can be enabled later without changing your local workflow.
+- Required base fields: `ctx_*` → `ctx_token_kind`, `ctx_owner_status`, `ctx_peer_alignment`.
+- Derived when missing: `ctx_salient_other_alignment`, `ctx_recent_affect`, `ctx_group_label`.
+- Loader behavior:
+  - If `--scenarios` points to a Parquet file with required fields, it is used.
+  - Otherwise, a small synthetic grid is synthesized for demos.
+- ScenarioList emitted via:
+
+```python
+from edsl import ScenarioList
+ScenarioList.from_list("ctx", rows)
+```
+
+## Personas & Models
+
+- personas.py:
+  - `DEFAULT_PERSONAS` includes `persona_baseline` (simple identity/affect placeholders).
+  - `load_personas_file(Path)` loads JSON list or dict.
+  - `build_agent_list(personas)` → EDSL AgentList.
+- modelspec.py:
+  - `DEFAULT_MODELS` (example: map `gpt-4o` → coop slug `gpt-4o-mini`).
+  - `load_models_file(Path)` loads JSON.
+  - `build_model_list(specs, use_coop_slug=bool)` → EDSL ModelList.
+  - CLI auto‑selects defaults when files not provided.
+
+## Survey & Valuation (surveys.py)
+
+- SURVEY_ID: `crv_one_agent_valuation_v0.1.1`
+- `build_question()`: QuestionLinearScale (1–7) with explicit `ctx_*` variables:
+  - group label, salient other alignment, recent affect, ownership, peer alignment.
+- `build_survey()`: wraps the question in an EDSL Survey.
+
+## Normalization & Aggregation
+
+- `policy.tidy_results(raw_df)`:
+  - Ensures stable schema: `ctx_*`, `persona`, `model`, `question`, `answer (int64)`, `prompt_hash`, `source`.
+  - Deterministic ordering for downstream consumers.
+- `policy.aggregate_policy(tidy_df)`:
+  - Group by `ctx_*` + `persona` + `model` and compute `value_mean`, `value_sd`, `n`.
+- Wrappers exposed in `policy_builder` for compatibility (`tidy_results`, `aggregate_policy`).
+
+## Manifests (policy_builder.write_manifest)
+
+Manifest JSON records:
+
+- `timestamp`, `survey_id`, `run_stamp`, `runs_root`.
+- `git_commit` (if available), `edsl_version` (if available).
+- `meta`:
+  - `mode`, `seed`, `personas`, `models`.
+  - `persona_traits`, `models_meta`.
+  - `scenarios_source` (file path or `"synthetic:default"`).
+  - `iterations` (remote).
+  - `openai_key_present`, `expected_parrot_key_present`.
+  - row counts and paths: `raw_path`, `tidy_path`, `policy_path`.
+  - `prompt_hashes` (unique count).
+  - `remote_job` details and `remote_completed` (for remote).
+  - `error` (when failures occur).
+
+## Probes & Audits (Run Bundle IO)
+
+- `probes.schedule_probes(states_df, cfg)` → time-based manifest.
+- `probes.run_probes(cfg, manifest_df)` → tidy-style outputs (scaffold tasks).
+- `audit.compare(settings, run_id, survey_id?)` → MAE summary when tidy has both `answer` and `value`.
+- Writers (io_helpers.py) place artifacts under:
+
+```
+<root>/runs/<run_id>/artifacts/lab/{tidy,probes,policy,audit}/…
+```
+
+## Data Contracts
+
+- `tidy_<survey_id>.parquet` columns:
+  - `ctx_*` (string), `persona` (string), `model` (string), `question` (string),
+  - `answer` (int64; 1–7), `prompt_hash` (string), `source` (string).
+- `policy_<survey_id>.parquet` columns:
+  - `ctx_*` (string), `persona` (string), `model` (string),
+  - `value_mean` (float64), `value_sd` (float64), `n` (int64).
+
+## Troubleshooting
+
+- Missing `ctx_*` in tidy:
+  - `policy_builder` attempts to normalize typical shapes (e.g., `scenario.*`, `scenario.ctx.*`) and align to the expected grid.
+- Remote UUID missing:
+  - `pull-remote` requires a job UUID (via manifest or `--job`).
+- Keys:
+  - Local runs with GPT slugs need `OPENAI_API_KEY`; remote runs require `EXPECTED_PARROT_API_KEY`.
+- Strictness:
+  - Normalization fixes types/ordering; downstream tests expect consistent schema.
+
+## Testing
+
+```bash
+uv run ruff check .
+uv run mypy --strict
+uv run pytest -q
+```
+
+## Contributing
+
+- Follow `prompts/LAB_RESTRUCTURE_PLAN.md` and concept docs.
+- Keep typed outputs stable; prefer Polars (avoid pandas in library code).
+
+## References
+
+- Concept docs: `concept_docs/architecture_concept.md`, `concept_docs/crv_architecture_alignment.md`, `concept_docs/crv_math_alignment_notes.md`, `concept_docs/messy_math_spec.tex`, `concept_docs/react_mem0_gepa_overview.md`
+- Plans: `prompts/LAB_RESTRUCTURE_PLAN.md`, `plans/crv_mvp_master_plan.md`, `plans/crv_relother_rules_oracle_lab_audit_plan.md`, `plans/crv_relother_rules_oracle_lab_audit_plan_addendum_2025-09-19.md`
