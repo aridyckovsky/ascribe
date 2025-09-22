@@ -1,3 +1,5 @@
+import subprocess
+import tempfile
 from pathlib import Path
 
 import mkdocs_gen_files  # type: ignore[import-not-found]
@@ -5,10 +7,6 @@ import mkdocs_gen_files  # type: ignore[import-not-found]
 ROOT = Path(__file__).resolve().parents[1]
 p = Path("src/crv/core/core.ebnf")
 ebnf = p.read_text(encoding="utf-8")
-out = Path("docs/grammar/ebnf.md")
-out.parent.mkdir(parents=True, exist_ok=True)
-out.write_text("# CRV Core Grammar (EBNF)\n\n```ebnf\n" + ebnf + "\n```\n", encoding="utf-8")
-print(f"[ok] wrote {out}")
 
 # 1) EBNF.md
 ebnf_md = Path("grammar/ebnf.md")
@@ -18,6 +16,34 @@ with mkdocs_gen_files.open(ebnf_md, "w") as f:
     f.write(ebnf.rstrip() + "\n")
     f.write("```\n")
 mkdocs_gen_files.set_edit_path(ebnf_md, "src/crv/core/grammar.py")
+
+# 1a) Grammar diagrams (HTML) via gen-files
+static_diagrams = ROOT / "docs" / "grammar" / "diagrams.html"
+if not static_diagrams.exists():
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            out_html = Path(td) / "diagrams.html"
+            subprocess.run(
+                [
+                    "npx",
+                    "ebnf2railroad",
+                    "-t",
+                    "CRV Core Grammar Diagrams",
+                    str((ROOT / p).resolve()),
+                    "-o",
+                    str(out_html),
+                ],
+                check=True,
+                cwd=(ROOT / "tools" / "ebnf"),
+            )
+            html = out_html.read_text(encoding="utf-8")
+        with mkdocs_gen_files.open("grammar/diagrams.html", "w") as f:
+            f.write(html)
+    except Exception:
+        with mkdocs_gen_files.open("grammar/diagrams.html", "w") as f:
+            f.write(
+                "<h1>CRV Core Grammar Diagrams</h1><p>Diagram generation unavailable during build.</p>"
+            )
 
 # 1b) Project and package READMEs surfaced in docs
 repo_readme = ROOT / "README.md"

@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
 # Canonical docs build entrypoint for dev and CI.
 # - Grammar EBNF markdown is generated via tools/build_docs.py (mkdocs gen-files) at build time.
-# - This script handles Node-based diagram generation and runs the strict mkdocs build.
+# - Ensures Node deps are available; diagrams are generated during mkdocs gen-files. Runs strict mkdocs build.
 set -euo pipefail
 
-# Build EBNF diagrams (Node step)
+# Ensure Node deps for diagrams CLI (ebnf2railroad) are installed; actual generation happens in mkdocs gen-files
 if [ -d tools/ebnf/node_modules ]; then
-  npm --prefix tools/ebnf run diagrams
+  npm --prefix tools/ebnf ci
 else
   npm --prefix tools/ebnf ci
-  npm --prefix tools/ebnf run diagrams
 fi
 
 # Strict MkDocs build (gen-files runs tools/build_docs.py during build)
