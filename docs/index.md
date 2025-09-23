@@ -32,6 +32,26 @@ Psychological assumptions are often implicit. Ascribe makes them concrete and au
 
 At the core is a simple, repeatable loop for each agent:
 
+```mermaid
+graph LR
+  %% Horizontal CIRVA loop: World nodes (light orange), Agent nodes (slightly darker orange)
+  C_t["Context (t)"] --> I["Interpret"]
+  I --> R["Representation"]
+  R --> V["Valuation"]
+  V --> A["Action / Communication"]
+  A --> Log["World log"]
+  Log --> C_t1["Context (t+1)"]
+  C_t1 -.-> I
+
+  %% Classes
+  classDef world fill:#FFE3D6,stroke:#FF9F40,color:#000,stroke-width:1px;
+  classDef agent fill:#FFD1A6,stroke:#FF9F40,color:#000,stroke-width:1px;
+
+  %% Apply classes
+  class C_t,Log,C_t1 world;
+  class I,R,V,A agent;
+```
+
 - Context  
   Agents receive events routed by channel and visibility (e.g., public, group, room, DM) with optional delays.
 
