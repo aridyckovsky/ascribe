@@ -5,8 +5,7 @@
   --md-primary-fg-color--light: #1f1f1f;
   --md-primary-fg-color--dark: #000000;
 
-  /* Accent (green) */
-  /* Using Material green 500 and related tones */
+  /* Accent (orange) */
   --md-accent-fg-color: #FF590F;
   --md-accent-fg-color--light: #FFA780;
   --md-accent-fg-color--dark: #992F00;
@@ -44,17 +43,3 @@
 .md-typeset a:visited {
   color: var(--md-accent-fg-color) !important;
 }
-
-/* Optional: tune slate (dark) scheme variants
-[data-md-color-scheme="slate"] {
-  --md-primary-fg-color: #000000;
-  --md-primary-fg-color--light: #1a1a1a;
-  --md-primary-fg-color--dark: #000000;
-
-  --md-accent-fg-color: #66BB6A;
-  --md-accent-fg-color--light: #98EE99;
-  --md-accent-fg-color--dark: #338a3e;
-
-  --md-typeset-a-color: var(--md-accent-fg-color);
-}
-*/
