@@ -1,36 +1,14 @@
 # Ascribe
 
-Ascribe is a way to make psychological assumptions about value explicit inside AI agents and to observe how those assumptions play out in shared worlds. Agents perceive context, interpret what they see, update a structured internal representation (identity, affect, memory, attention), read out value, and then act or communicate. By running these simulations deterministically, we can learn about the conditions under which values converge, diverge, or polarize&mdash;and use those lessons to design real multi‑agent tests with people more safely and thoughtfully.
+A deterministic multi‑agent framework for making psychological value assumptions explicit, testable, and reproducible.
 
-Ascribe names this modeling loop CRV/CIRVA: Context → (Interpret) → Representation → Valuation → (Action).
+Ascribe exists to turn beliefs about context, identity, and affect into auditable models&mdash;so we can study how those beliefs shape behavior in shared worlds and use the results to design safer systems and human studies. When you run Ascribe, agents don’t just “choose.” They perceive context, interpret what they see, update a structured internal representation, read out bounded values, and then act or communicate. Because the world advances in deterministic steps, runs are comparable and replayable. You can change one assumption at a time and see exactly what changes.
 
-\*Note: This is an in-progress, very early-stage documentation site. All guidance and API are **unstable**.
+Imagine two cohorts viewing the same objects under different visibility rules. Public endorsements ripple widely; whispers stay within a group; a few private exchanges rewire identity ties. With Ascribe, you encode those rules, observe whether values converge, drift, or polarize, and quantify when coalitions form&mdash;all with artifacts you can inspect and re‑run.
 
-## Contents
+## The CRV/CIRVA loop
 
-- [What you can do with Ascribe](#what-you-can-do-with-ascribe)
-- [Why this matters](#why-this-matters)
-- [How it works (CRV/CIRVA)](#how-it-works-crvcirva)
-- [What’s in the box today](#whats-in-the-box-today)
-- [Try it quickly](#try-it-quickly)
-- [Outputs at a glance](#outputs-at-a-glance)
-- [Learn more](#learn-more)
-
-## What you can do with Ascribe
-
-- Describe how agents see the world (channels, visibility, timing), how they interpret it, and how that shapes their internal representation.
-- Explore how identity, affect, memory, and attention drive valuations and behavior over time.
-- Compare rules for visibility and communication (e.g., public vs group vs DM) and observe subgroup divergence.
-- Prototype incentives and exchange rules and see how they interact with identity and affect.
-- Use the results to plan human or real multi‑agent tests: which conditions to vary, what to measure, and how to pre‑register analyses.
-
-## Why this matters
-
-Psychological assumptions are often implicit. Ascribe makes them concrete and auditable. By running AI agents with human‑inspired cognitive architectures in simulated worlds, we can generate hypotheses about social dynamics&mdash;like when endorsements amplify attachment, when groups diverge under different visibility rules, or how coalitions shape value readouts. Those simulations help decide which systems are promising to test with people, how to stage those tests, and what to measure.
-
-## How it works (CRV/CIRVA)
-
-At the core is a simple, repeatable loop for each agent:
+Ascribe names the modeling loop CRV/CIRVA: Context → (Interpret) → Representation → Valuation → (Action). Each phase is explicit, and the timing is barriered: what’s computed at time t applies at time t+1, which makes runs deterministic and suitable for careful comparison.
 
 ```mermaid
 graph LR
@@ -52,69 +30,54 @@ graph LR
   class I,R,V,A agent;
 ```
 
-- Context  
-  Agents receive events routed by channel and visibility (e.g., public, group, room, DM) with optional delays.
+**Context** arrives through channels with scoped visibility&mdash;public, group, room, or direct&mdash;and optional delays. **Interpretation** turns observations into typed, inspectable appraisals. **Representation** updates a structured internal graph of identity and affect (for example, self→object “endowment,” self→other ties, perceived other→object stances, and object→valence traces). **Valuation** reads bounded values from that representation to score options. **Action** and communication follow&mdash;acquire, relinquish, relate, endorse, exchange, or speak&mdash;with the world logging outcomes.
 
-- Interpret  
-  Agents turn observations into typed, and therefore inspectable, interpretations that lead to appraisals.
+## From question to evidence
 
-- Representation  
-  Agents update a structured internal graph of identity and affect (e.g., self→object “endowment,” self→other ties, perceived other→object stances, object→valence traces). The focus is on keeping these state changes explicit and replayable.
+Work in Ascribe starts with a hypothesis you can articulate and test. Suppose endorsements are public but exchanges are private: do visible approvals amplify attachment more than quiet trades? You set the rules of the world, choose personas, and run the same CRV/CIRVA loop. Because both state and timing are explicit, you can replay runs exactly, vary one ingredient at a time, and attribute differences to the change you made.
 
-- Valuation  
-  Agents read out bounded values from their representation to score options.
-
-- Action/Communication  
-  Agents take actions (e.g., acquire/relinquish/relate/endorse/exchange) or send typed messages (speech acts). The world logs what happened.
-
-- Deterministic timing  
-  What is computed during time $t$ is applied at time $t+1$, making runs deterministic and suitable for careful comparison.
-
-This loop is designed for narrative clarity first&mdash;so we can tell a coherent story about why an agent did what it did&mdash;while remaining rigorous enough to support reproducible analysis.
-
-## What’s in the box today
-
-- A deterministic world kernel that executes the loop above and writes reproducible artifacts.
-- Typed interfaces for agent cognition so interpretations, patches to internal state, and decisions remain explicit.
-- A lightweight "lab" path to elicit per‑persona valuation policies over scenarios for fast sweeps without external services.
-- A read‑only visualization app for exploring runs and seeing how values and identity evolve.
-
-As the project evolves, the community may extend cognitive modules (e.g., bounded tool use, per‑agent memories), add richer visibility and coalition structures, and broaden exchange mechanisms—while preserving the same guarantees about determinism and explicit boundaries.
+When you need speed, you can elicit offline valuation policies for a persona without external services. Those policies plug into the same loop, letting you sweep scenarios quickly before committing to heavier experiments.
 
 ## Try it quickly
 
-Simulate a small run:
+Run a small simulation and open the app:
 
 ```bash
 uv run crv-abm-sim --n 30 --k 1 --steps 100 --seed 123 --out out/run
-```
-
-Open the app on that run:
-
-```bash
 uv run crv-app --run out/run
 ```
 
-Build a mock offline policy (no external keys required), then use it in a sim:
+Build a mock offline policy (no external keys), then use it in a sim:
 
 ```bash
 uv run crv-lab build-policy --runs-root runs/policy_demo --mode mock --persona persona_baseline --model gpt-4o
-uv run crv-app --run out/run
+RUN_DIR=$(ls -dt runs/policy_demo/* | head -1)
+uv run crv-abm-sim --policy "$RUN_DIR/policies/policy_crv_one_agent_valuation_v0.1.0.parquet" --steps 50 --out out/policy_sim
+uv run crv-app --run out/policy_sim
 ```
 
-## Outputs at a glance
+## What’s included today
 
-Runs produce Arrow‑friendly tables you can analyze in notebooks or view in the app. Typical files include:
+- A world kernel that executes the CRV/CIRVA loop and writes deterministic artifacts.
+- Typed interfaces for cognition so interpretations, state patches, and decisions remain explicit and auditable.
+- A “lab” path to elicit per‑persona valuation policies over scenarios for fast sweeps without external services.
+- A read‑only app for exploring runs and seeing how identity and values evolve.
 
-- `agents_tokens.parquet` (time‑stamped per‑agent, per‑object signals such as $s_{io}$, value_score, holdings)
-- `model.parquet` and `metadata.json` (configuration snapshots)
-- `events.parquet` (actions vs observations with channel/scope/delay), `relations.parquet` ($i\to j$), `other_object.parquet` ($i\to j$ on $o$), `object_object.parquet` ($o\to o$)
-- Optional lab artifacts: `policies/policy_*.parquet`, `lab/tidy.parquet`
+Boundaries between parts are clear so you can extend cognition or visibility rules without breaking determinism.
 
-Files are written append‑only and can be replayed for careful comparison across runs.
+## Artifacts at a glance
+
+- Each run produces Arrow‑friendly tables you can analyze or revisit.
+- You’ll see `agents_tokens.parquet` (time‑stamped per‑agent, per‑object signals such as $s_{io}$, `value_score`, `holdings`), `model.parquet` with `metadata.json` (the configuration snapshot), and `events.parquet` (observations and actions with channel/scope/delay).
+- Relation tables include `relations.parquet` ($i\to j$), `other_object.parquet` ($i\to j$ on $o$), and `object_object.parquet` ($o\to o$). Lab runs add `policies/policy_*.parquet` and a tidy summary.
+- Files are append‑only and replayable for careful comparison.
 
 ## Learn more
 
-- Quick guide: [Getting Started](guide/getting-started.md)
-- Explore the app and charts, then open the tables in your favorite analysis tool.
-- When you’re ready to dig deeper: visit the API docs for World, Lab, Mind, IO, and Core under `/api/crv/...`, and read the conceptual notes in `concept_docs/` for the broader research trajectory.
+- Start with the quick guide: [Getting Started](guide/getting-started.md).
+- Explore the app and charts, then open the tables in your analysis tool.
+- When you’re ready to dig deeper, see the API docs for World, Lab, Mind, IO, and Core under `/api/crv/`, and the conceptual notes in concept_docs/ for the broader research trajectory.
+
+---
+
+Note: This documentation is a preview; guidance and APIs are evolving.
