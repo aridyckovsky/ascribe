@@ -10,7 +10,33 @@ theme:
     - navigation.sections
     - content.code.copy
     - search.suggest
+
+markdown_extensions:
+  # Math (Material + MathJax via Arithmatex wrapper)
+  - pymdownx.arithmatex:
+      generic: true
+
+  # Code blocks (Material recommendations)
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+
+  # SuperFences (advanced blocks + Mermaid)
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: pymdownx.superfences.fence_code_format
+          
 extra_javascript:
+  # MathJax config must come before the runtime
+  - js/mathjax.js
+  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+
+  # Existing site JS
   - js/diagrams-nav.js
 plugins:
   - search

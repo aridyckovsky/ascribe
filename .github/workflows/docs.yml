@@ -54,16 +54,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docs-
 
-      - name: Sync Python dependencies
-        run: uv sync --frozen --extra docs
-
-      - name: Install Node dependencies
-        run: npm --prefix tools/ebnf ci
-
       - name: Build documentation (DSPy-enabled)
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: bash tools/generate_docs.sh
+        run: bash tools/generate_docs.sh build
 
       - name: Assert llms.txt authored by DSPy
         run: |
