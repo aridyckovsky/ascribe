@@ -1,7 +1,16 @@
 import os
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
+
+# Guard: ensure docs are built via the canonical wrapper to prepare env (Node, uv, PYTHONPATH, DSPy flags)
+if os.getenv("ASCRIBE_DOCS_VIA_WRAPPER") != "1":
+    sys.exit(
+        "Docs must be built via tools/generate_docs.sh.\n"
+        "Run: bash tools/generate_docs.sh\n"
+        "This ensures Node deps, uv sync, PYTHONPATH, and DSPy flags are set."
+    )
 
 import mkdocs_gen_files
 from dotenv import load_dotenv
