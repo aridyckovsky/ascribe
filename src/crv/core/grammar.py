@@ -475,6 +475,8 @@ class TableName(Enum):
     MESSAGES = "messages"
     DECISIONS = "decisions"
     ORACLE_CALLS = "oracle_calls"
+    HOLDINGS = "holdings"
+    HOLDINGS_VALUATION = "holdings_valuation"
 
 
 # ============================================================================
