@@ -147,7 +147,7 @@ Lower_snake EBNF and helpers:
 
 ## Table Catalog
 
-Descriptors live in `src/crv/core/tables.py` as frozen `TableDescriptor` instances.
+Descriptors live under `src/crv/core/tables/` as frozen `TableDescriptor` instances; the `tables` package `__init__.py` registers them into a canonical registry.
 All tables include `bucket` (partitioning key; computed in IO as `tick // TICK_BUCKET_SIZE`) and `version=SCHEMA_V`.
 
 - exchange
@@ -159,6 +159,13 @@ All tables include `bucket` (partitioning key; computed in IO as `tick // TICK_B
 
   - Purpose: Snapshot/delta rows of edges inside an agent’s internal representation.
   - Key columns: tick, observer_agent_id, edge_kind, subject_id?, object_id?, related_agent_id?, token_id?, edge_weight, edge_sign?.
+
+- holdings
+
+  - Purpose: Quantity snapshot of conserved resources per (tick, agent_id, token_id). Optional per ADR-003 when the domain models a conserved per-token resource.
+  - Key columns: tick, agent_id, token_id, quantity.
+
+- holdings_valuation (TODO)
 
 - scenarios_seen
 

@@ -93,6 +93,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Final
 
+from .versioning import SchemaVersion
+
 __all__ = [
     "ActionKind",
     "ChannelType",
@@ -102,6 +104,7 @@ __all__ = [
     "TopologyEdgeKind",
     "ExchangeKind",
     "TableName",
+    "TableDescriptor",
     "EBNF_GRAMMAR",
     "GrammarProduction",
     "ParsedGrammar",
@@ -475,6 +478,42 @@ class TableName(Enum):
     MESSAGES = "messages"
     DECISIONS = "decisions"
     ORACLE_CALLS = "oracle_calls"
+    HOLDINGS = "holdings"
+    HOLDINGS_VALUATION = "holdings_valuation"
+
+
+# ============================================================================
+# TABLE DESCRIPTOR TYPE (Core contract; used by crv.io to validate frames)
+# ============================================================================
+
+
+@dataclass(frozen=True)
+class TableDescriptor:
+    """
+    Frozen descriptor for a canonical CRV table.
+
+    Attributes:
+        name (TableName): Canonical table identifier (lower_snake serialized).
+        columns (dict[str, str]): Mapping of lower_snake column_name -> dtype
+            where dtype ∈ {"i64","f64","str","struct","list[struct]"}.
+        partitioning (list[str]): Partition columns (always ["bucket"]).
+        required (list[str]): Columns that must exist and be populated (non-null).
+        nullable (list[str]): Columns permitted to contain nulls. Validations for
+            combinations are enforced by Pydantic row models downstream.
+        version (SchemaVersion): Schema version pinned to crv.core.versioning.SCHEMA_V.
+
+    Notes:
+        - Core remains zero-IO; this type describes the schema contract only.
+        - IO layers (crv.io) materialize, validate, and append frames against
+          these descriptors.
+    """
+
+    name: TableName
+    columns: dict[str, str]  # "i64","f64","str","struct","list[struct]"
+    partitioning: list[str]  # always ["bucket"]
+    required: list[str]
+    nullable: list[str]
+    version: SchemaVersion
 
 
 # ============================================================================
