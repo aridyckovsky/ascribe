@@ -10,7 +10,18 @@ Notes
 - This module depends only on stdlib and crv.core.* (for SCHEMA_V) plus local io helpers.
 - It does NOT read parquet files for canonical table stats; it only reads per-table manifests.
 - For artifacts, it best-effort collects file sizes and optionally row counts if Polars is importable.
-"""
++
++Tables Index Schema (bundle.manifest["tables"]):
++- "<table_name>": {
++    rows: int,
++    bytes: int,
++    total_rows: int,    # canonical alias of rows
++    total_bytes: int,   # canonical alias of bytes
++    tick_min: int | null,
++    tick_max: int | null,
++    buckets: list[int]
++  }
++"""
 
 from __future__ import annotations
 
@@ -201,6 +212,13 @@ def write_run_bundle_manifest(
     run_dir = run_root(settings, str(run_id))
     makedirs(run_dir, exist_ok=True)
 
+    tables_idx = collect_tables_index(settings, run_id)
+    # Canonical alias fields: total_rows and total_bytes mirror rows and bytes in bundle tables index
+    tables_idx_bc = {
+        name: {**entry, "total_rows": entry.get("rows", 0), "total_bytes": entry.get("bytes", 0)}
+        for name, entry in tables_idx.items()
+    }
+
     payload: dict[str, Any] = {
         "schema_version": 1,
         "run": {
@@ -225,7 +243,7 @@ def write_run_bundle_manifest(
             "row_group_size": settings.row_group_size,
             "compression": settings.compression,
         },
-        "tables": collect_tables_index(settings, run_id),
+        "tables": tables_idx_bc,
         "artifacts": collect_artifacts_index(settings, run_id),
         "meta": meta or {},
     }

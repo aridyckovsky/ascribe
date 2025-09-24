@@ -41,6 +41,23 @@ Compression = Literal["zstd", "lz4", "snappy"]
 
 
 @dataclass(frozen=True)
+class ValuationSettings:
+    """Valuation-related runtime settings used by optional IO writers.
+
+    Notes:
+        - enabled gates valuation snapshot writes in world IO.
+        - cost_method selects inventory accounting (ADR-004).
+        - price_source selects the source for marks (future when priced exchanges exist).
+    """
+
+    enabled: bool = False
+    cost_method: Literal["wac", "fifo", "lifo", "specific_lot"] = "wac"
+    price_source: Literal["last_trade", "baseline_value", "vwap_window", "oracle"] = "last_trade"
+    vwap_window_ticks: int = 10
+    currency: str = "native"
+
+
+@dataclass(frozen=True)
 class IoSettings:
     """
     Runtime settings for the crv.io layer.
@@ -81,6 +98,8 @@ class IoSettings:
     fs_options: dict[str, Any] = field(default_factory=dict)
     strict_schema: bool = True
     write_manifest_every_n: int = 1
+    # Nested valuation settings (env/TOML override via IoSettings._apply_mapping)
+    valuation: ValuationSettings = field(default_factory=ValuationSettings)
 
     # Configuration loaders (env/TOML) with precedence: env > TOML > defaults.
 
@@ -152,6 +171,47 @@ class IoSettings:
             except Exception:
                 pass
 
+        # valuation (nested mapping)
+        if "valuation" in cfg and isinstance(cfg["valuation"], dict):
+            v = cfg["valuation"]
+            curr = s.valuation
+
+            enabled = v.get("enabled", curr.enabled)
+            cost_method = v.get("cost_method", curr.cost_method)
+            price_source = v.get("price_source", curr.price_source)
+            vwap_window_ticks = v.get("vwap_window_ticks", curr.vwap_window_ticks)
+            currency = v.get("currency", curr.currency)
+
+            try:
+                vwap_window_ticks = int(vwap_window_ticks)
+            except Exception:
+                vwap_window_ticks = curr.vwap_window_ticks
+
+            def _choice(val: Any, allowed: set[str], fallback: str) -> str:
+                if isinstance(val, str):
+                    lo = val.strip().lower()
+                    if lo in allowed:
+                        return lo
+                return fallback
+
+            s = replace(
+                s,
+                valuation=replace(
+                    curr,
+                    enabled=_bool(enabled),
+                    cost_method=_choice(
+                        cost_method, {"wac", "fifo", "lifo", "specific_lot"}, curr.cost_method
+                    ),
+                    price_source=_choice(
+                        price_source,
+                        {"last_trade", "baseline_value", "vwap_window", "oracle"},
+                        curr.price_source,
+                    ),
+                    vwap_window_ticks=vwap_window_ticks,
+                    currency=str(currency),
+                ),
+            )
+
         return s
 
     @classmethod
@@ -210,6 +270,23 @@ class IoSettings:
                 mapping["write_manifest_every_n"] = int(v)
             except Exception:
                 pass
+
+        # Nested valuation settings via env
+        v = get("VALUATION_ENABLED")
+        if v:
+            mapping.setdefault("valuation", {})["enabled"] = v
+        v = get("VALUATION_COST_METHOD")
+        if v:
+            mapping.setdefault("valuation", {})["cost_method"] = v
+        v = get("VALUATION_PRICE_SOURCE")
+        if v:
+            mapping.setdefault("valuation", {})["price_source"] = v
+        v = get("VALUATION_VWAP_WINDOW_TICKS")
+        if v:
+            mapping.setdefault("valuation", {})["vwap_window_ticks"] = v
+        v = get("VALUATION_CURRENCY")
+        if v:
+            mapping.setdefault("valuation", {})["currency"] = v
 
         return cls._apply_mapping(s, mapping)
 
