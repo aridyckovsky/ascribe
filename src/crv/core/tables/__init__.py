@@ -12,13 +12,19 @@ Notes:
 References:
     - specs: src/crv/core/.specs/spec-0.1.md, spec-0.2.md
 """
+# TODO: This should be decomposed into multiple files, one per table descriptor
+# so __init__.py can just import them all as its meant to do.
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .grammar import TableName
-from .versioning import SCHEMA_V, SchemaVersion
+# TODO: Should these imports be relative?
+from crv.core.grammar import TableName
+from crv.core.versioning import SCHEMA_V, SchemaVersion
+
+from .holdings import HOLDINGS_DESC
+from .holdings_valuation import HOLDINGS_VALUATION_DESC
 
 __all__ = [
     "TableDescriptor",
@@ -28,6 +34,8 @@ __all__ = [
     "MESSAGES_DESC",
     "DECISIONS_DESC",
     "ORACLE_CALLS_DESC",
+    "HOLDINGS_DESC",
+    "HOLDINGS_VALUATION_DESC",
     "get_table",
     "list_tables",
 ]
@@ -72,6 +80,7 @@ class TableDescriptor:
 # -----------------------------------------------------------------------------
 # Table descriptors
 # -----------------------------------------------------------------------------
+
 
 EXCHANGE_DESC = TableDescriptor(
     name=TableName.EXCHANGE,
@@ -286,6 +295,8 @@ _TABLES: dict[TableName, TableDescriptor] = {
     MESSAGES_DESC.name: MESSAGES_DESC,
     DECISIONS_DESC.name: DECISIONS_DESC,
     ORACLE_CALLS_DESC.name: ORACLE_CALLS_DESC,
+    HOLDINGS_DESC.name: HOLDINGS_DESC,
+    HOLDINGS_VALUATION_DESC.name: HOLDINGS_VALUATION_DESC,
 }
 
 
