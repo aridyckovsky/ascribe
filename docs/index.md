@@ -74,9 +74,14 @@ Boundaries between parts are clear so you can extend cognition or visibility rul
 
 ## Learn more
 
-- Start with the quick guide: [Getting Started](guide/getting-started.md).
-- Explore the app and charts, then open the tables in your analysis tool.
-- When you’re ready to dig deeper, see the API docs for World, Lab, Mind, IO, and Core under `/api/crv/`, and the conceptual notes in concept_docs/ for the broader research trajectory.
+- [Getting Started](guide/getting-started.md)
+- [Concepts](guide/concepts.md)
+- [Artifacts](guide/artifacts.md)
+- [CLI](guide/cli.md)
+- [Workflows](guide/workflows.md)
+- [App](guide/app.md)
+- [FAQ](guide/faq.md)
+- [API Reference Overview](api/index.md)
 
 ---
 

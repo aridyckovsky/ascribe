@@ -48,17 +48,17 @@ open site/index.html
 
 ### Read the Core contracts and grammar
 
-- [Core](../src/crv/core/README.md)
+- [Core](../api/crv/core/index.md)
 - [Grammar (EBNF)](../grammar/ebnf.md)
 - [Grammar Diagrams](../grammar/diagrams.html)
 
 ### Explore module guides
 
-- [IO](../src/crv/io/README.md)
-- [Lab](../src/crv/lab/README.md)
-- [Mind](../src/crv/mind/README.md)
-- [World](../src/crv/world/README.md)
-- [Viz](../src/crv/viz/README.md)
+- [IO](../api/crv/io/index.md)
+- [Lab](../api/crv/lab/index.md)
+- [Mind](../api/crv/mind/index.md)
+- [World](../api/crv/world/index.md)
+- [Viz](../api/crv/viz/index.md)
 
 ## Key Dependencies
 

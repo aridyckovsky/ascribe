@@ -1,0 +1,51 @@
+modules:
+  - import_path: crv.io.config
+    status: experimental
+    note: IO paths and manifest utilities are under active iteration during MVP hardening.
+    since: "2025-09-25"
+  - import_path: crv.core.grammar
+    status: experimental
+    note: Grammar synchronization and EBNF may change as expressivity is extended.
+    since: "2025-09-25"
+  - import_path: crv.core.versioning
+    status: experimental
+    note: Version helpers may change while APIs converge toward 1.0.
+    since: "2025-09-25"
+  - import_path: crv.world.model
+    status: experimental
+    note: World stepping and event types may change as observation channels evolve.
+    since: "2025-09-25"
+  - import_path: crv.world.events
+    status: experimental
+    note: Event schemas and channel scopes are under active iteration.
+    since: "2025-09-25"
+  - import_path: crv.world.observation_rules
+    status: experimental
+    note: Observation topology and visibility rules are changing during audits.
+    since: "2025-09-25"
+
+packages:
+  - import_path: crv.core
+    status: experimental
+    note: Core contracts and artifacts are evolving; changes may be non-additive before 1.0.
+    since: "2025-09-25"
+  - import_path: crv.io
+    status: experimental
+    note: IO contracts and run manifests may change during alignment work.
+    since: "2025-09-25"
+  - import_path: crv.lab
+    status: experimental
+    note: Policy elicitation and audit flows are still evolving.
+    since: "2025-09-25"
+  - import_path: crv.mind
+    status: experimental
+    note: Mind orchestration APIs are evolving as policy interfaces mature.
+    since: "2025-09-25"
+  - import_path: crv.viz
+    status: experimental
+    note: Visualization APIs and dashboards are subject to change.
+    since: "2025-09-25"
+  - import_path: crv.world
+    status: experimental
+    note: World rules and channel semantics may change during MVP hardening.
+    since: "2025-09-25"

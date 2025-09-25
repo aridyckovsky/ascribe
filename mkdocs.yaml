@@ -8,6 +8,7 @@ theme:
   features:
     - navigation.tabs
     - navigation.sections
+    - navigation.indexes
     - content.code.copy
     - search.suggest
 
@@ -48,6 +49,9 @@ markdown_extensions:
           class: mermaid
           # Note: this is causing yaml lint issues in VSCode, but works fine in MkDocs build
           format: !!python/name:pymdownx.superfences.fence_code_format
+  - admonition
+  - tables
+  - pymdownx.details
 
 extra_javascript:
   # MathJax config must come before the runtime
@@ -61,13 +65,18 @@ extra_css:
   - stylesheets/extra.css
 
 plugins:
-  - search
+  - gen-files:
+      scripts:
+        - tools/build_docs.py
+  - literate-nav:
+      nav_file: SUMMARY.md
   - mkdocstrings:
       handlers:
         python:
           paths: [src]
           options:
             docstring_style: google
+            docstring_section_style: table
             show_source: true
             show_root_heading: true
             separate_signature: true
@@ -80,11 +89,8 @@ plugins:
             show_signature_annotations: true
             annotations_path: full
             show_submodules: false
-            show_object_full_path: false
-            show_root_full_path: false
+            show_object_full_path: true
+            show_root_full_path: true
             line_length: 88
-  - gen-files:
-      scripts:
-        - tools/build_docs.py
-  - literate-nav:
-      nav_file: SUMMARY.md
+  - autorefs
+  - search

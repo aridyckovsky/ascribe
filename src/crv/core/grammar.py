@@ -1,87 +1,10 @@
 """
-Canonical CRV grammar and helpers.
+Canonical grammar and normalization helpers.
 
-Defines actions, channels, visibility scopes, patch operations, representation edge kinds, and exchange kinds. Includes an authoritative lower_snake EBNF and zero-IO validators/helpers used across the stack.
+Defines enums (actions, channels, visibility, patch operations, representation edge kinds, exchange kinds) and helpers to normalize/validate enum-like strings. Includes the authoritative lower_snake EBNF. Zero‑IO; source of truth for naming.
 
-Responsibilities
-- Define enums and lower_snake EBNF terminals.
-- Provide normalization and validation helpers for enum-like strings and visibility.
-- Centralize canonical PatchOp operations (no legacy aliases).
-- Supply developer-facing examples and math mapping tables.
-
-Design principles
------------------
-1) One naming standard:
-   - Enum classes: PascalCase
-   - Enum member names: UPPER_SNAKE (Python constants)
-   - Enum serialized values (wire/EBNF/Parquet): lower_snake
-   - Fields & columns elsewhere: lower_snake
-
-2) Psychology-first:
-   - Core grammar does NOT encode legal “rights” taxonomies.
-   - Exchanges are generic and MAY publish a baseline_value that can feed
-     valuation V(token) as B_token(t). Venue-specific mechanics live in
-     payloads, not in core enums.
-
-3) Representation vs. topology:
-   - RepresentationEdgeKind describes edges INSIDE an agent's identity/
-     affect representation and is logged to identity_edges.
-   - TopologyEdgeKind (optional/future) describes links in the WORLD
-     topology (e.g., “is_neighbor”, “follows”) and would be logged to a
-     separate world_topology_edges table if/when you add it.
-
-Math-to-Code mapping
------------------------------------
-The code intentionally avoids math symbols; this mapping aids researchers. Edge rows use RepresentationEdgeKind values (edge_kind) in identity_edges; readout/valuation/baseline remain field names.
-
-| Math symbol                      | Meaning (concept)                                       | Code enum/value
-|----------------------------------|---------------------------------------------------------|-----------------------------
-| s^+_{agent}                      | self positive anchor                                    | self_to_positive_valence
-| s^-_{agent}                      | self negative anchor                                    | self_to_negative_valence
-| s_{agent,token}                  | self→object attachment (endowment)                      | self_to_object
-| a_{agent,other_agent}            | primitive self→other attitude                           | self_to_agent
-| u^+_{agent,other_agent}          | positive feeling toward other agent                     | agent_to_positive_valence
-| u^-_{agent,other_agent}          | negative feeling toward other agent                     | agent_to_negative_valence
-| b_{agent,other_agent,token}      | other→object stance (as perceived by self)              | agent_to_object
-| d_{agent,other_a,other_b}        | other–other alliance/rivalry (as perceived)             | agent_to_agent
-| q_{agent,other_a,other_b,token}  | pair-on-object (perceived coalition on token)           | agent_pair_to_object
-| r^+_{agent,token}                | positive object trace                                   | object_to_positive_valence
-| r^-_{agent,token}                | negative object trace                                   | object_to_negative_valence
-| c_{agent,token_a,token_b}        | token–token association                                 | object_to_object
-| U_agent(token)                   | representation readout driver                           | representation_score
-| V_agent(token)                   | bounded valuation                                       | valuation_score
-| B_token(t)                       | exchange baseline (price/poll/trend)                    | baseline_value
-
-Downstream usage
-----------------
-- Validators across `crv.core.schema` call these helpers to normalize and guard
-  enum-like strings (e.g., `action_kind_from_value`, `exchange_kind_from_value`,
-  `edge_kind_from_value`, `normalize_visibility`).
-- Tests and dashboards use `ensure_all_enum_values_lower_snake` to enforce
-  naming invariants.
-- `canonical_action_key` provides compact, human-friendly labels for logs and
-  dashboards; program logic MUST NOT parse it (use structured fields instead).
-
-Examples
---------
-Normalize visibility and action kinds, and build a canonical key:
-
->>> from crv.core.grammar import (
-...     normalize_visibility,
-...     action_kind_from_value,
-...     canonical_action_key,
-...     ActionKind,
-... )
->>> normalize_visibility("PUBLIC")
-'public'
->>> action_kind_from_value("acquire_token") == ActionKind.ACQUIRE_TOKEN
-True
->>> canonical_action_key(ActionKind.ACQUIRE_TOKEN, token_id="Alpha")
-'acquire_token:token_id=Alpha'
-
-Tags
-----
-grammar, enums, normalization, ebnf, lower_snake, helpers
+See Also:
+  schema.md, versioning.md
 """
 
 from __future__ import annotations
