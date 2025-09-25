@@ -89,7 +89,8 @@ plugins:
             show_signature_annotations: true
             annotations_path: full
             show_submodules: false
-            show_object_full_path: false
-            show_root_full_path: false
+            show_object_full_path: true
+            show_root_full_path: true
             line_length: 88
+  - autorefs
   - search

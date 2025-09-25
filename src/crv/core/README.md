@@ -145,6 +145,32 @@ Lower_snake EBNF and helpers:
 - Helpers: `is_lower_snake`, `assert_lower_snake`, `normalize_visibility`, `canonical_action_key`, etc.
 - Test utility: `ensure_all_enum_values_lower_snake`.
 
+### Design principles
+
+- One naming standard: Enum classes are PascalCase; enum member names are UPPER_SNAKE; serialized enum values (wire/EBNF/Parquet) are lower_snake; all field/column names are lower_snake.
+- Psychology-first: Core grammar does not encode legal “rights” taxonomies. Exchanges are generic and may publish a baseline_value that can feed valuation V(token) as B_token(t). Venue-specific mechanics live in payloads, not in core enums.
+- Representation vs. topology: RepresentationEdgeKind describes edges inside an agent’s identity/affect representation and is logged to identity_edges. TopologyEdgeKind (future) describes links in the world topology (e.g., is_neighbor, follows) and would live in a separate world_topology table.
+
+### Math-to-code mapping
+
+| Math symbol                      | Meaning (concept)                             | Code enum/value            |
+| -------------------------------- | --------------------------------------------- | -------------------------- |
+| s^+\_{agent}                     | self positive anchor                          | self_to_positive_valence   |
+| s^-\_{agent}                     | self negative anchor                          | self_to_negative_valence   |
+| s\_{agent,token}                 | self→object attachment (endowment)            | self_to_object             |
+| a\_{agent,other_agent}           | primitive self→other attitude                 | self_to_agent              |
+| u^+\_{agent,other_agent}         | positive feeling toward other agent           | agent_to_positive_valence  |
+| u^-\_{agent,other_agent}         | negative feeling toward other agent           | agent_to_negative_valence  |
+| b\_{agent,other_agent,token}     | other→object stance (as perceived by self)    | agent_to_object            |
+| d\_{agent,other_a,other_b}       | other–other alliance/rivalry (as perceived)   | agent_to_agent             |
+| q\_{agent,other_a,other_b,token} | pair-on-object (perceived coalition on token) | agent_pair_to_object       |
+| r^+\_{agent,token}               | positive object trace                         | object_to_positive_valence |
+| r^-\_{agent,token}               | negative object trace                         | object_to_negative_valence |
+| c\_{agent,token_a,token_b}       | token–token association                       | object_to_object           |
+| U_agent(token)                   | representation readout driver                 | representation_score       |
+| V_agent(token)                   | bounded valuation                             | valuation_score            |
+| B_token(t)                       | exchange baseline (price/poll/trend)          | baseline_value             |
+
 ## Table Catalog
 
 Descriptors live under `src/crv/core/tables/` as frozen `TableDescriptor` instances; the `tables` package `__init__.py` registers them into a canonical registry.

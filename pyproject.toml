@@ -46,7 +46,8 @@ docs = [
   "mkdocs-material>=9.5,<10",
   "mkdocstrings[python]>=0.25,<0.31",
   "mkdocs-gen-files>=0.5",
-  "mkdocs-literate-nav>=0.6"
+  "mkdocs-literate-nav>=0.6",
+  "mkdocs-autorefs>=0.5"
 ]
 
 [dependency-groups]
