@@ -42,7 +42,8 @@ case "$cmd" in
     ;;
   serve)
     # Local dev server with correct PYTHONPATH and guard
-    uv run mkdocs serve "$@"
+    # Watch src (code) and build script for live reload in addition to docs/
+    uv run mkdocs serve -w src -w tools/build_docs.py "$@"
     ;;
   *)
     echo "Usage: $0 [build|serve] [-- mkdocs args]" >&2

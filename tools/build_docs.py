@@ -123,11 +123,26 @@ PACKAGES = ["core", "io", "lab", "mind", "viz", "world"]
 # Build literate-nav SUMMARY.md manually for broad compatibility
 # Collect per-module API pages while generating them, then write a nested bullet list.
 api_entries = {pkg: [] for pkg in PACKAGES}
+# Map of discovered package import path -> generated doc path (api/.../index.md)
+package_entries = {}
 
 for pkg in PACKAGES:
     pkg_dir = ROOT / "src" / "crv" / pkg
     if not pkg_dir.exists():
         continue
+
+    # Generate package pages for every discovered package (directories with __init__.py).
+    # These pages will be used in the nav; module pages are still generated (below) but not listed.
+    for init_file in sorted(pkg_dir.rglob("__init__.py")):
+        rel_from_src = init_file.relative_to(ROOT / "src")  # e.g., crv/core/tables/__init__.py
+        package_import_path = ".".join(rel_from_src.parts[:-1])  # e.g., crv.core.tables
+        doc_path = Path("api") / rel_from_src.parent / "index.md"
+        with mkdocs_gen_files.open(doc_path, "w") as f:
+            f.write(
+                f"# `{package_import_path}`\n\n::: {package_import_path}\n    options:\n      show_submodules: false\n      members_order: source\n      show_source: false\n      show_if_no_docstring: true\n      filters:\n        - '!.*'\n"
+            )
+        mkdocs_gen_files.set_edit_path(doc_path, rel_from_src.parent.as_posix())
+        package_entries[package_import_path] = doc_path.as_posix()
 
     for py_file in sorted(pkg_dir.rglob("*.py")):
         if py_file.name == "__init__.py":
@@ -176,14 +191,59 @@ if (ROOT / "src" / "crv" / "world" / "README.md").exists():
 if (ROOT / "src" / "crv" / "viz" / "README.md").exists():
     add("[Viz](src/crv/viz/README.md)", 1)
 
-# API Reference (packages → modules)
+# API Reference (packages with modules listed under the nearest package)
 add("API Reference")
-for pkg in PACKAGES:
-    if not api_entries.get(pkg):
-        continue
-    add(f"crv.{pkg}", 1)
-    for import_path, doc_path in api_entries[pkg]:
-        add(f"[{import_path}]({doc_path})", 2)
+
+
+def _short_label(path: str) -> str:
+    return path.split(".")[-1]
+
+
+# Prepare a mapping from package import path -> list of its module pages
+modules_by_package: dict[str, list[tuple[str, str]]] = {k: [] for k in package_entries.keys()}
+
+# Sort packages by descending length to match the nearest (longest) prefix
+sorted_packages = sorted(package_entries.keys(), key=len, reverse=True)
+
+# Assign each module to its nearest package (longest matching prefix)
+for _, entries in api_entries.items():
+    for mod_import_path, mod_doc_path in entries:
+        # Skip if this module is itself a package page (__init__.py was handled above)
+        if mod_import_path in package_entries:
+            continue
+        target_pkg = None
+        for pkg_path in sorted_packages:
+            # Ensure exact dot-boundary prefix match
+            if mod_import_path == pkg_path or mod_import_path.startswith(pkg_path + "."):
+                target_pkg = pkg_path
+                break
+        if target_pkg is None:
+            # Fallback: attach to top-level 'crv' if nothing matches (shouldn't happen given PACKAGES)
+            continue
+        modules_by_package[target_pkg].append((mod_import_path, mod_doc_path))
+
+# Emit packages and their modules with clean labels and hierarchical indentation
+TOP_LEVEL_PACKAGES = {"crv.core", "crv.io", "crv.world", "crv.lab", "crv.mind", "crv.viz"}
+
+for pkg_path in sorted(package_entries.keys()):
+    pkg_doc = package_entries[pkg_path]  # always link to api/<package>/index.md
+    pkg_level = max(1, pkg_path.count("."))  # 'crv.core' -> 1, 'crv.core.tables' -> 2
+
+    # Labels: top-level keep full path; subpackages use last segment only
+    pkg_label = pkg_path if pkg_path in TOP_LEVEL_PACKAGES else _short_label(pkg_path)
+
+    # Emit plain section header (not a link)
+    add(f"{pkg_label}", pkg_level)
+
+    # First child: same label linking to the package index (promotes header to link target)
+    add(f"[{pkg_label}]({pkg_doc})", pkg_level + 1)
+
+    # List modules with short labels; avoid duplicate same-name link directly under header
+    for mod_import_path, mod_doc_path in sorted(modules_by_package.get(pkg_path, [])):
+        mod_label = _short_label(mod_import_path)
+        if mod_label == pkg_label:
+            continue  # prevent duplicate same-name entry under header
+        add(f"[{mod_label}]({mod_doc_path})", pkg_level + 1)
 
 # Emit SUMMARY.md
 with mkdocs_gen_files.open("SUMMARY.md", "w") as f:
