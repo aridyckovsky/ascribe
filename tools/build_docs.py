@@ -122,6 +122,7 @@ def emit_package_page(
             f"      show_submodules: false\n"
             f"      members_order: source\n"
             f"      show_source: false\n"
+            f"      show_docstring: true\n"
             f"      show_if_no_docstring: true\n"
             f"      filters:\n"
             f"        - '!.*'\n"
@@ -347,6 +348,71 @@ for pkg in PACKAGES:
         top = rel_from_src.parts[1] if len(rel_from_src.parts) > 1 else ""
         if top in api_entries:
             api_entries[top].append((import_path, doc_path.as_posix()))
+
+# Generate placeholder pages for referenced-but-missing targets (keep docstrings visible without broken links)
+PLACEHOLDER_TARGETS: dict[str, list[str]] = {
+    "lab": [
+        "audit",
+        "cli",
+        "io_helpers",
+        "modelspec",
+        "personas",
+        "policy",
+        "policy_builder",
+        "probes",
+        "scenarios",
+        "survey",
+        "surveys",
+        "tasks",
+    ],
+    "mind": [
+        "cache",
+        "compile",
+        "eval",
+        "oracle_types",
+        "oracle",
+        "programs",
+        "react_controller",
+        "signatures",
+    ],
+    "viz": [
+        "base",
+        "dashboards",
+        "distributions",
+        "events",
+        "identity",
+        "layers",
+        "networks",
+        "save",
+        "theme",
+        "timeseries",
+    ],
+    "world": [
+        "agents",
+        "config",
+        "data",
+        "mesa_data",
+        "model",
+        "observation_rules",
+        "sim",
+        "sweep",
+    ],
+}
+
+for pkg_key, names in PLACEHOLDER_TARGETS.items():
+    base = Path("api") / "crv" / pkg_key
+    for name in names:
+        target = base / f"{name}.md"
+        # If a real module page was generated, leave it; otherwise create a placeholder so links don't break strict builds.
+        if not target.exists():
+            with mkdocs_gen_files.open(target, "w") as f:
+                f.write(f"# crv.{pkg_key}.{name}\n\n")
+                f.write('!!! note "Placeholder"\n')
+                f.write(
+                    "    This page is a placeholder for future documentation. "
+                    "It is intentionally included to avoid broken links in strict builds. "
+                    "Content will be added when the corresponding module/docs are finalized.\n"
+                )
 
 # Compose literate-nav as nested bullets
 summary_lines: list[str] = []
